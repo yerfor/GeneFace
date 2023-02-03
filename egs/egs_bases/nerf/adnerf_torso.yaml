@@ -1,0 +1,7 @@
+base_config:
+  - egs/egs_bases/nerf/adnerf.yaml
+
+task_cls: tasks.nerfs.adnerf_torso.ADNeRFTorsoTask
+no_smo_iterations: 0 # nerf_torso use the fixed audatt_net from head_nerf
+head_model_dir: ''
+use_color: false

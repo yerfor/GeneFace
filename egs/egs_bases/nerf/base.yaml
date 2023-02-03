@@ -1,0 +1,70 @@
+# dataset-related
+raw_data_dir: data/raw/videos
+processed_data_dir: data/processed/videos
+binary_data_dir: data/binary/videos
+video_id: ''
+task_cls: ''
+
+# project-related
+work_dir: ''
+load_ckpt: ''
+tb_log_interval: 100
+num_ckpt_keep: 1
+val_check_interval: 10000
+valid_infer_interval: 10000
+num_sanity_val_steps: 0
+num_valid_plots: 5
+eval_max_batches: 100 # num_test_plots
+print_nan_grads: false
+resume_from_checkpoint: 0 # specify the step, 0 for latest
+amp: false
+valid_monitor_key: val_loss
+valid_monitor_mode: min
+save_best: true
+debug: false
+save_codes:
+- tasks
+- modules
+- egs
+
+# testing related
+gen_dir_name: ''
+save_gt: true
+
+# training-scheme-related
+max_updates: 40_0000
+seed: 9999
+lr: 0.0005
+scheduler: exponential # exponential|rsqrt|warmup|none|step_lr
+warmup_updates: 0
+optimizer_adam_beta1: 0.9
+optimizer_adam_beta2: 0.999
+weight_decay: 0
+clip_grad_norm: 0 # disable grad clipping 
+clip_grad_value: 0 # disable grad clipping 
+rays_sampler_type: uniform
+in_rect_percent: 0.95
+accumulate_grad_batches: 1
+
+# model-related
+use_window_cond: true
+with_att: true # only available when use win_cond, use a attention Net in AD-NeRF 
+cond_type: ''
+cond_dim: 64
+hidden_size: 256
+
+# NeRF-related 
+near: 0.3
+far: 0.9
+n_rays: 1600 # default 2048, 1600 for RTX2080Ti 
+n_samples_per_ray: 64
+n_samples_per_ray_fine: 128
+embedding_args:
+  multi_res_pos: 10 # log2+1 of max freq for positional encoding (3D location)
+  multi_res_views: 4 # log2+1 of max freq for positional encoding (2D direction)
+
+infer_cond_name: ''
+infer_out_video_name: ''
+infer_scale_factor: 0.25
+infer_smo_std: 0.
+infer_audio_source_name: ''

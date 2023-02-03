@@ -1,0 +1,36 @@
+base_config:
+  - egs/egs_bases/audio2motion/vae_sync.yaml
+
+task_cls: tasks.postnet.lm3d_postnet_adv_sync.PostnetAdvSyncTask
+audio2motion_task_cls: tasks.audio2motion.lm3d_vae_sync.VAESyncAudio2MotionTask
+person_binary_data_dir: data/binary/videos
+# postnet training
+postnet_lr: 0.0001
+postnet_lambda_adv: 0.85
+postnet_lambda_sync: 0.1
+postnet_lambda_mse: 0.05
+
+# Discriminator
+postnet_disc_lr: 0.0001
+discriminator_scheduler_params:
+  gamma: 0.5
+  step_size: 40000
+postnet_disc_start_steps: 0
+postnet_disc_interval: 1
+
+# Training Schedule
+scheduler: none
+num_ckpt_keep: 500
+val_check_interval: 1000
+valid_infer_interval: 1000
+max_updates: 12000
+
+# Pretrained Ckpts
+audio2motion_work_dir: checkpoints/lrs3/lm3d_vae/
+audio2motion_ckpt_steps: 40000
+syncnet_work_dir: checkpoints/lrs3/syncnet
+syncnet_ckpt_steps: 40000
+
+infer_audio_source_name: data/raw/val_wavs/zozo.wav
+infer_out_npy_name: infer_out/May/pred_lm3d/zozo.npy
+infer_ckpt_steps: 6000

@@ -1,0 +1,5 @@
+base_config:
+  - egs/egs_bases/nerf/adnerf.yaml
+
+video_id: May
+

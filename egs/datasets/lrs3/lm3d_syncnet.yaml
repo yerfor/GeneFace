@@ -1,0 +1,2 @@
+base_config:
+  - egs/egs_bases/syncnet/base.yaml

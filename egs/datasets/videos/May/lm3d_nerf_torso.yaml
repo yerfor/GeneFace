@@ -1,0 +1,5 @@
+base_config:
+  - egs/egs_bases/nerf/lm3d_nerf_torso.yaml
+
+video_id: May
+head_model_dir: checkpoints/May/lm3d_nerf

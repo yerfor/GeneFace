@@ -1,0 +1,6 @@
+base_config:
+  - egs/egs_bases/nerf/base.yaml
+
+task_cls: tasks.nerfs.adnerf.ADNeRFTask
+cond_type: deepspeech
+no_smo_iterations: 20_0000

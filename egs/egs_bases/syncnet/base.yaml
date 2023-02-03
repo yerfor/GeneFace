@@ -1,0 +1,36 @@
+# dataset-related
+binary_data_dir: data/binary/lrs3
+
+# project-related
+work_dir: ''
+load_ckpt: ''
+tb_log_interval: 100
+val_check_interval: 1000
+valid_infer_interval: 1000
+num_sanity_val_steps: 5
+num_valid_plots: 1
+eval_max_batches: 10 # num_test_plots
+print_nan_grads: false
+resume_from_checkpoint: 0 # specify the step, 0 for latest
+amp: false
+valid_monitor_key: val_loss
+valid_monitor_mode: min
+save_best: true
+debug: false
+save_codes:
+- tasks
+- modules
+- egs
+accumulate_grad_batches: 1
+clip_grad_norm: 1.
+
+# training-scheme-related
+task_cls: tasks.syncnet.lm3d_syncnet.SyncNetTask
+max_updates: 5_0000
+seed: 9999
+lr: 0.0005
+optimizer_adam_beta1: 0.9
+optimizer_adam_beta2: 0.999
+scheduler: none
+num_ckpt_keep: 100
+

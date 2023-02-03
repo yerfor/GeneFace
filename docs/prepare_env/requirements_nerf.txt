@@ -1,0 +1,15 @@
+tensorflow-gpu==2.2.0
+scipy
+python_speech_features
+resampy
+pandas
+opencv_python
+face_alignment
+scikit-image
+matplotlib
+sklearn
+scikit-learn
+configargparse
+tensorboardX
+ffmpeg-python
+librosa

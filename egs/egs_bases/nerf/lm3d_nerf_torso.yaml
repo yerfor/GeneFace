@@ -1,0 +1,9 @@
+base_config:
+  - egs/egs_bases/nerf/lm3d_nerf.yaml
+
+task_cls: tasks.nerfs.lm3d_nerf_torso.Lm3dNeRFTorsoTask
+
+no_smo_iterations: 0 # nerf_torso use the fixed audatt_net from head_nerf
+use_color: true
+
+head_model_dir: ''

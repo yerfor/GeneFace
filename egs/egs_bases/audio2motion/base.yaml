@@ -1,0 +1,48 @@
+# dataset-related
+binary_data_dir: data/binary/lrs3
+
+# project-related
+work_dir: ''
+load_ckpt: ''
+tb_log_interval: 100
+
+# testing related
+gen_dir_name: ''
+save_gt: true
+
+# training-scheme-related
+num_ckpt_keep: 100
+val_check_interval: 2000
+valid_infer_interval: 2000
+max_updates: 10_0000
+seed: 9999
+lr: 0.0005
+scheduler: exponential # exponential|rsqrt|warmup|none|step_lr
+warmup_updates: 1000
+optimizer_adam_beta1: 0.9
+optimizer_adam_beta2: 0.999
+weight_decay: 0
+accumulate_grad_batches: 1
+clip_grad_norm: 1
+clip_grad_value: 0
+num_sanity_val_steps: 5
+num_valid_plots: 1
+eval_max_batches: 10 # num_test_plots
+print_nan_grads: false
+resume_from_checkpoint: 0 # specify the step, 0 for latest
+amp: false
+valid_monitor_key: val_loss
+valid_monitor_mode: min
+save_best: false
+debug: false
+save_codes:
+- tasks
+- modules
+- egs
+
+# model-related
+hidden_size: 256
+
+# infer-related
+infer_audio_source_name: ''
+infer_out_npy_name: ''
