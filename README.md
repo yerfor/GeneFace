@@ -2,7 +2,7 @@
 
 #### Zhenhui Ye, Ziyue Jiang, Yi Ren, Jinglin Liu, Jinzheng He, Zhou Zhao | Zhejiang University, ByteDance
 
-[![arXiv](https://img.shields.io/badge/arXiv-Paper-%3CCOLOR%3E.svg)](https://arxiv.org/abs/2301.13430)| [![GitHub Stars](https://img.shields.io/github/stars/yerfor/GeneFace)](https://github.com/yerfor/SyntaSpeech) | ![visitors](https://visitor-badge.glitch.me/badge?page_id=yerfor/GeneFace) | [中文文档](README-zh.md)
+[![arXiv](https://img.shields.io/badge/arXiv-Paper-%3CCOLOR%3E.svg)](https://arxiv.org/abs/2301.13430)| [![GitHub Stars](https://img.shields.io/github/stars/yerfor/GeneFace)](https://github.com/yerfor/GeneFace) | ![visitors](https://visitor-badge.glitch.me/badge?page_id=yerfor/GeneFace) | [中文文档](README-zh.md)
 
 This repository is the official PyTorch implementation of our [ICLR-2023 paper](https://arxiv.org/abs/2301.13430)\, in which we propose **GeneFace** for generalized and high-fidelity audio-driven talking face generation. The inference pipeline is as follows:
 

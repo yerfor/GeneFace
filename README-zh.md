@@ -1,6 +1,6 @@
 # GeneFace: Generalized and High-Fidelity Audio-Driven 3D Talking Face Synthesis | ICLR'23
 
-[![arXiv](https://img.shields.io/badge/arXiv-Paper-%3CCOLOR%3E.svg)](https://arxiv.org/abs/2301.13430)| [![GitHub Stars](https://img.shields.io/github/stars/yerfor/GeneFace)](https://github.com/yerfor/SyntaSpeech) | ![visitors](https://visitor-badge.glitch.me/badge?page_id=yerfor/GeneFace)
+[![arXiv](https://img.shields.io/badge/arXiv-Paper-%3CCOLOR%3E.svg)](https://arxiv.org/abs/2301.13430)| [![GitHub Stars](https://img.shields.io/github/stars/yerfor/GeneFace)](https://github.com/yerfor/GeneFace) | ![visitors](https://visitor-badge.glitch.me/badge?page_id=yerfor/GeneFace)
 
 这个仓库是我们[ICLR-2023论文](https://arxiv.org/abs/2301.13430)的官方PyTorch实现，我们在其中提出了**GeneFace** 算法，用于通用和高保真的音频驱动的虚拟人视频合成。
 
