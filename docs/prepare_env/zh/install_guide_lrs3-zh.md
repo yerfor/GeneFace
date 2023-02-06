@@ -26,6 +26,8 @@
 
 # 2. 安装python库
 
+注意：请确保tensorflow-gpu已与CUDA成功安装。这是必要的网格渲染器编译!
+
 ```
 conda create -n process_lrs3 python=3.7.11
 conda activate process_lrs3
