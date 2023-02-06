@@ -3,7 +3,6 @@ numpy>=1.19.0
 six==1.15.0
 tqdm>=4.1.0
 progressbar==2.5
-tensorflow-gpu==1.14.0
 absl-py==0.7.1
 attrdict==2.0.1
 pyxdg==0.21
@@ -13,8 +12,8 @@ lmdb==1.2.1
 librosa==0.8.0
 moviepy==1.0.3
 imageio==2.9.0
-torch>=1.10.0
-torchvision>=0.4.0
+torch==1.4.0
+torchvision
 tensorflow-addons>=0.12.1
 easydict>=1.9
 tensorboardX>=1.8
@@ -22,3 +21,4 @@ opencv-python>=4.5.1
 scikit-image>=0.17.2
 vector_quantize_pytorch==0.4.10
 pyyaml
+face_alignment==1.2.0

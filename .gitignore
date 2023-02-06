@@ -159,3 +159,8 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+data_util/deepspeech_features/deepspeech-0.9.2-models.pbmm
+deep_3drecon/mesh_renderer/bazel-bin
+deep_3drecon/mesh_renderer/bazel-mesh_renderer
+deep_3drecon/mesh_renderer/bazel-out
+deep_3drecon/mesh_renderer/bazel-testlogs

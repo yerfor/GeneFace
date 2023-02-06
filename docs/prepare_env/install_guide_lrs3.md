@@ -33,7 +33,8 @@ Note: Please ensure that tensorflow-gpu is successfully installed with CUDA. Thi
 ```
 conda create -n process_lrs3 python=3.7.11
 conda activate process_lrs3
-pip install -r requirements_lrs3.txt
+conda install tensorflow-gpu=1.14.0 cudatoolkit=10.1
+pip install -r docs/prepare_env/requirements_lrs3.txt
 ```
 
 # 3. Locally compile the Tensorflow-based mesh renderer
@@ -75,6 +76,7 @@ mv ./bazel-bin/kernels/rasterize_triangles_kernel.so ./kernels/
 # 4. Verification of the Installation
 
 ```
+cd <root_dir>
 conda activate process_lrs3
 export PYTHONPATH=./
 CUDA_VISIBLE_DEVICES=0 python 

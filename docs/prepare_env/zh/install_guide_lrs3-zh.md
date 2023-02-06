@@ -26,12 +26,13 @@
 
 # 2. 安装python库
 
-注意：请确保tensorflow-gpu已与CUDA成功安装。这是必要的网格渲染器编译!
+注意：请确保tensorflow-gpu已与CUDA成功安装。这是后续步骤中编译mesh renderer的必要条件！
 
 ```
 conda create -n process_lrs3 python=3.7.11
 conda activate process_lrs3
-pip install -r requirements_lrs3.txt
+conda install tensorflow-gpu=1.14.0 cudatoolkit=10.1
+pip install -r docs/prepare_env/requirements_lrs3.txt
 ```
 
 # 3. 本地编译mesh renderer
@@ -72,6 +73,7 @@ mv ./bazel-bin/kernels/rasterize_triangles_kernel.so ./kernels/
 # 4. 验证安装成功
 
 ```
+cd <root_dir>
 conda activate process_lrs3
 export PYTHONPATH=./
 CUDA_VISIBLE_DEVICES=0 python 
