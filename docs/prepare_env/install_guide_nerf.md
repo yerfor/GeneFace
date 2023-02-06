@@ -1,4 +1,4 @@
-[中文文档](docs/prepare_env/zh/install_guide_nerf-zh.md)
+[中文文档](./zh/install_guide_nerf-zh.md)
 
 This guide is about building a python environment, which is necessary to process the dataset for NeRF and train the GeneFace.
 

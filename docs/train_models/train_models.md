@@ -1,4 +1,4 @@
-[中文文档](docs/train_models/train_models-zh.md)
+[中文文档](./train_models-zh.md)
 
 # Train GeneFace!
 
@@ -52,6 +52,30 @@ CUDA_VISIBLE_DEVICES=0 python tasks/run.py --config=egs/datasets/videos/May/lm3d
 ```
 
 Note that the Post-net is person-specific, so for each target person video, you need to train a new Post-net.
+
+#### tips: choosing the appropriate checkpoint
+
+Since our postnet belongs to **Adversarial** Domain Adaptation, whose training process is widely considered to be unstable. For example, training the model for too many steps may lead to model collapse. For example, when mode collapse occurs, the postnet may map abitrary input landmark into the same landmark in the target person domain (which results in rises in validation sync/mse loss). Therefore, to avoid degradation of the lip-sync performance, we should make an early stop, i.e., select a checkpoint trained with a small number of iterations. However, at the same time, if the number of iterations is too small, postnet may be underfitting and cannot successfully map the landmarks into the target person domain (which means the adversarial loss is not converged).
+
+Therefore, in practice, we choose the checkpoint with the appropriate number of iterations according to three principles: (1) validation sync/mse loss should be as low as possible; (2) the adversarial loss should be convergenced. (3) a small number of iterations is desirable.
+
+The following figure shows an example of the process of selecting the appropriate postnet checkpoint when training `May.mp4`. We found that `val/mse` and `val/sync` are relatively low at 6k steps. Besides, `tr/disc_neg_conf` and `tr/disc_pos_conf` are both about 0.5 (which means that the discriminator cannot distinguish between the (GT) positive samples and the (postnet-generated) negative samples), so we choose the checkpoint at 6k steps.
+
+<p align="center">
+    <br>
+    <img src="../../assets/tips_to_select_postnet_ckpt.png" width="1000"/>
+    <br>
+</p>
+
+Finally, to quickly verify the lip-sync performance of the selected postnet checkpoint, we also provide a script to visualize the predicted 3D landmark. Run the following script (you may need to modify the path names in the following `.sh` and `.py` files):
+
+```
+conda activate geneface
+bash infer_postnet.sh # use the selected postnet checkpoint to predict the 3D landmark sequence.
+python utils/visualization/lm_visualizer.py # visualize the 3D landmark sequence.
+```
+
+You can see the visual 3d landmark video in `./3d_landmark.mp4`.
 
 ## Step4. Train the NeRF-based Render
 

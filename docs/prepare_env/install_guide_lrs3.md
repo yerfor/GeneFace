@@ -1,4 +1,4 @@
-[中文文档](docs/prepare_env/zh/install_guide_lrs3-zh.md)
+[中文文档](./zh/install_guide_lrs3-zh.md)
 
 This guide is about building a python env to process the LRS3-TED dataset.
 

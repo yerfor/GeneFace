@@ -25,6 +25,7 @@ def render_idexp_npy_to_lm_video(npy_name, out_video_name, audio_name=None):
     for i_img in range(len(lm3d)):
         lm2d = lm3d[i_img ,:, :2] # [68, 2]
         img = np.ones([WH, WH, 3], dtype=np.uint8) * 255
+        
         for i in range(len(lm2d)):
             x, y = lm2d[i]
             if i in eye_idx:
@@ -35,8 +36,12 @@ def render_idexp_npy_to_lm_video(npy_name, out_video_name, audio_name=None):
                 color = (255,0,0)
             img = cv2.circle(img, center=(x,y), radius=3, color=color, thickness=-1)
             font = cv2.FONT_HERSHEY_SIMPLEX
-            img = cv2.putText(img, f"{i}", org=(x,y), fontFace=font, fontScale=0.3, color=(255,0,0))
         img = cv2.flip(img, 0)
+        for i in range(len(lm2d)):
+            x, y = lm2d[i]
+            y = WH - y
+            img = cv2.putText(img, f"{i}", org=(x,y), fontFace=font, fontScale=0.3, color=(255,0,0))
+        
         out_name = os.path.join(tmp_img_dir, f'{format(i_img, "05d")}.png')
         cv2.imwrite(out_name, img)
     imgs_to_video(tmp_img_dir, out_video_name, audio_name)
@@ -44,6 +49,6 @@ def render_idexp_npy_to_lm_video(npy_name, out_video_name, audio_name=None):
 
 if __name__ == '__main__':
     npy_name = f"infer_out/May/pred_lm3d/zozo.npy"
-    out_path = "./1.mp4"
+    out_path = "./3d_landmark.mp4"
     audio_path = "data/raw/val_wavs/zozo.wav"
     render_idexp_npy_to_lm_video(npy_name, out_path, audio_path)

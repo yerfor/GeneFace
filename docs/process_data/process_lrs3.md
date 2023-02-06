@@ -1,4 +1,4 @@
-[中文文档](docs/process_data/zh/process_lrs3-zh.md)
+[中文文档](./zh/process_lrs3-zh.md)
 
 # Process the Target Person Video
 
