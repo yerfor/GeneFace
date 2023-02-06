@@ -1,6 +1,8 @@
+[中文文档](docs/process_data/zh/process_target_person_video-zh.md)
+
 # Process the Target Person Video
 
-You need a about 3-minute-long videos of the target person to train the person-specific postnet and NeRF-based renderer.
+You need a about 3-minute-long videos of the target person to train the person-specific postnet and NeRF-based renderer. The video is the longer the better.
 
 We provide a example video at the path: `data/raw/videos/May.mp4`
 
@@ -28,8 +30,6 @@ export VIDEO_ID=May
 CUDA_VISIBLE_DEVICES=0 python data_gen/nerf/extract_hubert.py --video_id=$VIDEO_ID
 CUDA_VISIBLE_DEVICES=0 python data_gen/nerf/extract_3dmm.py --video_id=$VIDEO_ID
 ```
-
-
 
 ## Step3. binarize the dataset
 

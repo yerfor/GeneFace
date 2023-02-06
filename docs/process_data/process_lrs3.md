@@ -1,10 +1,16 @@
+[中文文档](docs/process_data/zh/process_lrs3-zh.md)
+
+# Process the Target Person Video
+
+You need a about 3-minute-long videos of the target person to train the person-specific postnet and NeRF-based renderer
+
 # Process the LRS3 dataset
 
 We use LRS3 dataset to learn a robust audio2motion generator. It is also required for training a post-net and syncnet.
 
 ## Step1. Apply and Download the LRS3-TED dataset
 
-Apply in [this link](https://www.robots.ox.ac.uk/~vgg/data/lip_reading/lrs3.html).
+Due to the License, we cannot provide a download link here. You can apply for LRS3-TED at [this link]().
 
 ## Step2. Process the LRS3
 

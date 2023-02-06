@@ -14,13 +14,13 @@
 
 ## Quick Started!
 
-我们提供[预训练的GeneFace模型](https://drive.google.com/drive/folders/1L87ZuvC3BOPdWZ7fALdUKYcIt4pWXtDz?usp=share_link)，以便您能快速上手。如果您想在您自己的目标人物视频上训练GeneFace，请遵循 `docs/prepare_env`、`docs/process_data` 、`docs/train_models` 中的步骤。
+在[这个release](https://github.com/yerfor/GeneFace/releases/tag/v1.0.0)中，我们提供了预训练的GeneFace模型，以便您能快速上手。在本小节的剩余部分我们将介绍如何分4个步骤运行这些模型。如果您想在您自己的目标人物视频上训练GeneFace，请遵循 `docs/prepare_env`、`docs/process_data` 、`docs/train_models` 中的步骤。
 
-步骤1：我们在[这个链接](https://drive.google.com/drive/folders/1qsYYWmyiDnf0v5AAF9EplAaoO6DLxjFd?usp=share_link)上提供了预先训练好的Audio2motion模型(上图中的Variational Motion Generator)，您可以下载它并将其放在 `checkpoints/lrs3/lm3d_vae` 。
+步骤1：根据我们在`docs/prepare_env/install_guide_nerf.md`中的步骤，新建一个名为`geneface`的Python环境。
 
-步骤2：我们在[这个链接](https://drive.google.com/drive/folders/1qsYYWmyiDnf0v5AAF9EplAaoO6DLxjFd?usp=share_link)上提供了预先训练好的Post-net (上图中的Domain Adaptative Post-net )，这个模型在 ` data/raw/videos/May.mp4` 上预训练。 您可以下载它并将其放在  `checkpoints/May/postnet` 。
+步骤2：下载`lrs3.zip`文件，并将其解压在`checkpoints`文件夹中。
 
-Step3. 我们在[这个链接](https://drive.google.com/drive/folders/1qsYYWmyiDnf0v5AAF9EplAaoO6DLxjFd?usp=share_link)上提供了预先训练好的NeRF (上图中的3DMM NeRF Renderer) ，这个模型在 ` data/raw/videos/May.mp4` 上预训练。您可以下载它并将其放在 `checkpoints/May/lm3d_nerf` and `checkpoints/May/lm3d_nerf_torso` 。
+步骤3：下载`May.zip`文件，并将其解压在`checkpoints`文件夹中。
 
 做完上面的步骤后，您的 `checkpoints`文件夹的结构应该是这样的：
 
@@ -47,15 +47,15 @@ bash scripts/infer_lm3d_nerf.sh
 
 ## 搭建环境
 
-请参照该文件夹中的步骤 `docs/prepare_env`.
+请参照`docs/prepare_env`文件夹中的步骤 .
 
 ## 准备数据
 
-请参照该文件夹中的步骤 `docs/process_data`.
+请参照`docs/process_data`文件夹中的步骤.
 
 ## 训练模型
 
-请参照该文件夹中的步骤 `docs/train_models`.
+请参照`docs/train_models`文件夹中的步骤.
 
 # 在其他目标人物视频上训练GeneFace
 
@@ -63,12 +63,12 @@ bash scripts/infer_lm3d_nerf.sh
 
 要训练一个名为 <`video_id>.mp4`的新视频，你应该把它放在 `data/raw/videos/`目录下，然后在 `egs/datasets/videos/<video_id>`目录下创建一个新文件夹，并根据提供的示例文件夹 `egs/datasets/videos/May`添加对应的yaml配置文件。
 
-除了使用我们提供的视频进行训练完，您还可以自己录制视频，为自己训练一个独一无二的GeneFace虚拟人模型！
+除了使用我们提供的视频进行训练外，您还可以自己录制视频，为自己训练一个独一无二的GeneFace虚拟人模型！
 
 # 待办事项
 
-GeneFace使用3D人脸关键点作为语音转动作模块和运动转图像模块之间的中介。但是，由Post-net生成的3D人脸关键点序列有时会出现不好的情况（如时序上的抖动，或超大的嘴巴），进而影响NeRF渲染的视频质量。目前，我们通过对预测的人脸关键点序列进行后处理，部分缓解了这一问题。但是目前的后处理方法还是略显简易，不能完美解决所有bad case。因此我们鼓励大家提出更好的后处理方法。
-
+- GeneFace使用3D人脸关键点作为语音转动作模块和运动转图像模块之间的中介变量。但是，由Post-net生成的3D人脸关键点序列有时会出现不好的情况（如时序上的抖动，或超大的嘴巴），进而影响NeRF渲染的视频质量。目前，我们通过对预测的人脸关键点序列进行后处理，部分缓解了这一问题。但是目前的后处理方法还是略显简易，不能完美解决所有bad case。因此我们鼓励大家提出更好的后处理方法。
+- 基于NeRF的图像渲染器的推理过程相对较慢(使用RTX2080Ti渲染250帧512x512分辨率的图像需要大约2个小时)。目前，我们可以通过将'——n_samples_per_ray '和'——n_samples_per_ray_fine '设置为较低的值来部分缓解这个问题。在未来，我们将添加加速NeRF推理的技术。
 ## 引用我们的论文
 
 ```

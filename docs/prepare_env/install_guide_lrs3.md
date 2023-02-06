@@ -1,6 +1,8 @@
-Build a python env to process the LRS3-TED dataset.
+[中文文档](docs/prepare_env/zh/install_guide_lrs3-zh.md)
 
-The following installation process is verified in RTX2080, Ubuntu 16.04. It may also work in newer environments (such as RTX3090 + ).
+This guide is about building a python env to process the LRS3-TED dataset.
+
+The following installation process is verified in RTX2080, Ubuntu 16.04. It may also work in newer environments (such as RTX3090 + ) with small modifications (such as changing a newer CUDA version).
 
 # 1. Download 3D morphable face models
 

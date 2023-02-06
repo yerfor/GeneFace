@@ -1,6 +1,8 @@
-Build a python env to process the dataset for NeRF, and train the GeneFace.
+[中文文档](docs/prepare_env/zh/install_guide_nerf-zh.md)
 
-The following installation process is verified in RTX2080, Ubuntu 16.04. It may also work in newer environments (such as RTX3090 + ).
+This guide is about building a python environment, which is necessary to process the dataset for NeRF and train the GeneFace.
+
+The following installation process is verified in RTX2080, Ubuntu 16.04. It may also work in newer environments (such as RTX3090 + ) with small modifications (such as changing a newer CUDA version).
 
 # 1. Install the python libraries
 
