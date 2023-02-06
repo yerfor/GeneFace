@@ -104,13 +104,17 @@ def prepare_deepspeech_net(deepspeech_pb_path):
     graph = tf.compat.v1.get_default_graph()
     tf.import_graph_def(graph_def, name="deepspeech")
     # if tensorflow=1.15
-    logits_ph = graph.get_tensor_by_name("deepspeech/logits:0")
-    input_node_ph = graph.get_tensor_by_name("deepspeech/input_node:0")
-    input_lengths_ph = graph.get_tensor_by_name("deepspeech/input_lengths:0")
+    if tf.__version__.startswith("1."):
+        logits_ph = graph.get_tensor_by_name("deepspeech/logits:0")
+        input_node_ph = graph.get_tensor_by_name("deepspeech/input_node:0")
+        input_lengths_ph = graph.get_tensor_by_name("deepspeech/input_lengths:0")
     # if tensorflow=2.x
-    # logits_ph = graph.get_tensor_by_name("logits:0")
-    # input_node_ph = graph.get_tensor_by_name("input_node:0")
-    # input_lengths_ph = graph.get_tensor_by_name("input_lengths:0")
+    elif tf.__version__.startswith("2."):
+        logits_ph = graph.get_tensor_by_name("logits:0")
+        input_node_ph = graph.get_tensor_by_name("input_node:0")
+        input_lengths_ph = graph.get_tensor_by_name("input_lengths:0")
+    else:
+        raise ValueError("")
     return graph, logits_ph, input_node_ph, input_lengths_ph
 
 
