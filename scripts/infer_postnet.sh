@@ -7,5 +7,5 @@ python inference/postnet/postnet_infer.py \
     --config=checkpoints/${Video_ID}/postnet/config.yaml \
     --hparams=infer_audio_source_name=data/raw/val_wavs/${Wav_ID}.wav,\
 infer_out_npy_name=infer_out/${Video_ID}/pred_lm3d/${Wav_ID}.npy,\
-nfer_ckpt_steps=${Postnet_Ckpt_Steps} \
+infer_ckpt_steps=${Postnet_Ckpt_Steps} \
     --reset
