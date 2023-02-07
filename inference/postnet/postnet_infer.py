@@ -40,7 +40,7 @@ class PostnetInfer:
         self.inp = inp
         samples = self.get_cond_from_input(inp)
         out_name = self.forward_system(samples, inp)
-        print(f"The synthesized video is saved at {out_name}")
+        print(f"The predicted and refined 3D landmark sequence is saved at {out_name}")
 
     def get_cond_from_input(self, inp):
         """
@@ -114,7 +114,7 @@ class PostnetInfer:
         self.wav16k_name = wav16k_name
         extract_wav_cmd = f"ffmpeg -i {source_name} -f wav -ar 16000 {wav16k_name} -y"
         os.system(extract_wav_cmd)
-        print(f"I have extracted wav file (16khz) from {source_name} to {wav16k_name}.")
+        print(f"Extracted wav file (16khz) from {source_name} to {wav16k_name}.")
 
 if __name__ == '__main__':
     set_hparams()

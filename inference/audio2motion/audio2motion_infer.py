@@ -39,7 +39,7 @@ class Audio2MotionInfer:
         self.inp = inp
         samples = self.get_cond_from_input(inp)
         out_name = self.forward_system(samples, inp)
-        print(f"The synthesized video is saved at {out_name}")
+        print(f"The predicted 3D landmark sequence is saved at {out_name}")
 
     def get_cond_from_input(self, inp):
         """

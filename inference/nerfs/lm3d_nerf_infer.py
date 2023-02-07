@@ -52,7 +52,7 @@ def postprocess_lm3d(lm3d):
         lm3d = local_smooth(lm3d, start, end, pad=5, smo_std=1.5)
     return lm3d
 
-class ExpNeRFInfer(BaseNeRFInfer):
+class LM3dNeRFInfer(BaseNeRFInfer):
 
     def get_cond_from_input(self, inp):
         """
@@ -65,21 +65,21 @@ class ExpNeRFInfer(BaseNeRFInfer):
         assert inp['cond_name'].endswith('.npy')
         lm3d_arr = np.load(inp['cond_name'])[0] # [T, w=16, c=29]
         idexp_lm3d = torch.from_numpy(lm3d_arr).float()
-        print(f"I have Loaded the pre-extracted lm3d from {inp['cond_name']}!")
+        print(f"Loaded pre-extracted 3D landmark sequence from {inp['cond_name']}!")
         
         # load the deepspeech features as the condition for lm3d torso nerf
         wav16k_name = self.wav16k_name
         deepspeech_name = wav16k_name[:-4] + '_deepspeech.npy'
         if not os.path.exists(deepspeech_name):
-            print(f"Trying to extract deepspeech from {wav16k_name}...")
+            print(f"Try to extract deepspeech from {wav16k_name}...")
             deepspeech_python = '/home/yezhenhui/anaconda3/envs/geneface/bin/python' # the path of your python interpreter that has installed DeepSpeech
             extract_deepspeech_cmd = f'{deepspeech_python} data_util/deepspeech_features/extract_ds_features.py --input={wav16k_name} --output={deepspeech_name}'
             os.system(extract_deepspeech_cmd)
-            print(f"I have extracted deepspeech features from {wav16k_name} to {deepspeech_name}.")
+            print(f"Saved deepspeech features of {wav16k_name} to {deepspeech_name}.")
         else:
             print(f"Try to load pre-extracted deepspeech from {deepspeech_name}...")
         deepspeech_arr = np.load(deepspeech_name) # [T, w=16, c=29]
-        
+        print(f"Loaded deepspeech features from {deepspeech_name}.")
         # get window condition of deepspeech
         from data_gen.nerf.binarizer import get_win_conds
         num_samples = min(len(lm3d_arr), len(deepspeech_arr), self.infer_max_length)
@@ -116,4 +116,4 @@ if __name__ == '__main__':
             'out_video_name': 'infer_out/May/pred_video/zozo.mp4',
             }
 
-    ExpNeRFInfer.example_run(inp)
+    LM3dNeRFInfer.example_run(inp)

@@ -1,4 +1,4 @@
 base_config:
   - egs/egs_bases/nerf/lm3d_nerf.yaml
 
-video_id: May
+video_id: May # the video file should be located at `data/raw/videos/<video_id>.mp4`
