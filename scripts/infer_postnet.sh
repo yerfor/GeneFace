@@ -5,5 +5,7 @@ export Postnet_Ckpt_Steps=6000 # please reach to `docs/train_models.md` to get s
 
 python inference/postnet/postnet_infer.py \
     --config=checkpoints/${Video_ID}/postnet/config.yaml \
-    --hparams=infer_audio_source_name=data/raw/val_wavs/${Wav_ID}.wav,infer_out_npy_name=infer_out/${Video_ID}/pred_lm3d/${Wav_ID}.npy,infer_ckpt_steps=${Postnet_Ckpt_Steps} \
+    --hparams=infer_audio_source_name=data/raw/val_wavs/${Wav_ID}.wav,\
+infer_out_npy_name=infer_out/${Video_ID}/pred_lm3d/${Wav_ID}.npy,\
+nfer_ckpt_steps=${Postnet_Ckpt_Steps} \
     --reset
