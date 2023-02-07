@@ -10,7 +10,7 @@ The following installation process is verified in RTX2080, Ubuntu 16.04. It may 
 conda create -n geneface python=3.8
 conda activate geneface
 conda install -c pytorch pytorch=1.7.1 torchvision cudatoolkit=10.2
-# conda install -c pytorch pytorch=1.7.1 torchvision cudatoolkit=11.2 # RTX3090ti
+# conda install -c pytorch pytorch=1.7.1 torchvision cudatoolkit=11.0 # RTX3090 etc.
 conda install -c fvcore -c iopath -c conda-forge fvcore iopath
 conda install -c bottler nvidiacub
 conda install pytorch3d -c pytorch3d
