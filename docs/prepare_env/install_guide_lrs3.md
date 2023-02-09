@@ -28,12 +28,13 @@ Extract the `BFM_model_front.mat` and place it to the `./deep_3drecon/BFM_models
 
 # 2. Install the python libraries
 
-Note: Please ensure that tensorflow-gpu is successfully installed with CUDA. This is neccessary for the compilation of mesh renderer!
+Note: Please ensure that tensorflow-gpu is successfully installed with CUDA.
 
 ```
 conda create -n process_lrs3 python=3.7.11
 conda activate process_lrs3
 conda install tensorflow-gpu=1.14.0 cudatoolkit=10.1
+conda install pytorch=1.7.1 torchvision -c pytorch
 pip install -r docs/prepare_env/requirements_lrs3.txt
 ```
 

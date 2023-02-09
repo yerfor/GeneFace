@@ -28,7 +28,6 @@ conda activate process_lrs3
 export PYTHONPATH=./
 export VIDEO_ID=May
 CUDA_VISIBLE_DEVICES=0 python data_gen/nerf/extract_3dmm.py --video_id=$VIDEO_ID
-conda activate geneface
 CUDA_VISIBLE_DEVICES=0 python data_gen/nerf/extract_hubert.py --video_id=$VIDEO_ID
 ```
 

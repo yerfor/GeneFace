@@ -12,8 +12,6 @@ lmdb==1.2.1
 librosa==0.8.0
 moviepy==1.0.3
 imageio==2.9.0
-torch==1.4.0
-torchvision
 tensorflow-addons>=0.12.1
 easydict>=1.9
 tensorboardX>=1.8
@@ -22,4 +20,4 @@ scikit-image>=0.17.2
 vector_quantize_pytorch==0.4.10
 pyyaml
 face_alignment==1.2.0
-transformers
+transformers==4.26.0

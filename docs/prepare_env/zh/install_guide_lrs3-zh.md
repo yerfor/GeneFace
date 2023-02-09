@@ -26,12 +26,13 @@
 
 # 2. 安装python库
 
-注意：请确保tensorflow-gpu已与CUDA成功安装。这是后续步骤中编译mesh renderer的必要条件！
+注意：请确保tensorflow-gpu已与CUDA成功安装。
 
 ```
 conda create -n process_lrs3 python=3.7.11
 conda activate process_lrs3
 conda install tensorflow-gpu=1.14.0 cudatoolkit=10.1
+conda install pytorch=1.7.1 torchvision -c pytorch
 pip install -r docs/prepare_env/requirements_lrs3.txt
 ```
 
