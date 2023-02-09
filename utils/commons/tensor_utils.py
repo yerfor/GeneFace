@@ -62,7 +62,7 @@ def tensors_to_np(tensors):
 
 def convert_to_tensor(arrays):
     if isinstance(arrays, np.ndarray):
-        v = torch.from_numpy(v).float()
+        v = torch.from_numpy(arrays).float()
         ret = v
     elif isinstance(arrays, torch.Tensor):
         ret = arrays

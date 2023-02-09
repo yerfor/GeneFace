@@ -1,5 +1,7 @@
 import torch
 from scipy.spatial.transform import Rotation as R
+from utils.commons.tensor_utils import convert_to_tensor
+
 
 def rot2euler(rot, use_radian=True):
     r = R.from_matrix(rot)
@@ -23,13 +25,13 @@ def euler_trans_2_c2w(euler, trans):
         rot = euler2rot(euler) # [b, 3, 3]
         bs = trans.shape[0]
         trans = trans.reshape([bs, 3, 1])
-        rot = torch.tensor(rot).float()
-        trans = torch.tensor(trans).float()
+        rot = convert_to_tensor(rot).float()
+        trans = convert_to_tensor(trans).float()
         c2w = torch.cat([rot, trans], dim=-1) # [b, 3, 4]
     else:
         rot = euler2rot(euler) # [3, 3]
         trans = trans.reshape([3, 1])
-        rot = torch.tensor(rot).float()
-        trans = torch.tensor(trans).float()
+        rot = convert_to_tensor(rot).float()
+        trans = convert_to_tensor(trans).float()
         c2w = torch.cat([rot, trans], dim=-1) # [3, 4]
     return c2w
