@@ -22,3 +22,4 @@ scikit-image>=0.17.2
 vector_quantize_pytorch==0.4.10
 pyyaml
 face_alignment==1.2.0
+transformers

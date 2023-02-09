@@ -34,7 +34,7 @@ run the following commandline to binarize the dataset. (You may need to modify t
 
 ```
 conda activate procerss_lrs3
-python data_gen/process_lrs3/binarizer.py 
+python data_gen/process_lrs3/binarizer.py
 ```
 
 Then you may find a directory at the path  `data/binary/lrs3/`

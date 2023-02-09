@@ -13,3 +13,4 @@ configargparse
 tensorboardX
 ffmpeg-python
 librosa
+transformers
