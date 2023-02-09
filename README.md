@@ -16,7 +16,7 @@ Our GeneFace achieves better lip synchronization and expressiveness to out-of-do
 
 ## Quick Start!
 
-We provide pre-trained models of GeneFace in [this release](https://github.com/yerfor/GeneFace/releases/tag/v1.0.0) to enable a quick start. In the following, we show how to infer the pre-trained models in 4 steps. If you want to train GeneFace on your own target person video, please reach to the following sections (`Prepare Environments`, `Prepare Datasets`, and `Train Models`).
+We provide pre-trained models and processed datasets of GeneFace in [this release](https://github.com/yerfor/GeneFace/releases/tag/v1.0.0) to enable a quick start. In the following, we show how to infer the pre-trained models in 4 steps. If you want to train GeneFace on your own target person video, please reach to the following sections (`Prepare Environments`, `Prepare Datasets`, and `Train Models`).
 
 - Step1. Create a new python env named `geneface` following the guide in `docs/prepare_env/install_guide_nerf.md`.
 
