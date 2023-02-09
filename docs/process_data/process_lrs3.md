@@ -11,6 +11,8 @@ We use LRS3 dataset to learn a robust audio2motion generator. It is also require
     - step2. Unzip `lrs3_0722.zip` and place it into the `data/binary/lrs3` folder.
 - Disclaimer: the provided binarized dataset file only contains data-masked features (such as HuBERT for audio representations), so it does not viloate the copyright of LRS3.
 
+If you ue our processed lrs3 dataset, you can skip the first 3 steps, and directly go to `step4`
+
 ## Step1. Apply and Download the LRS3-TED dataset
 
 Due to the License, we cannot provide a download link here. You can apply for LRS3-TED at [this link]().
@@ -40,4 +42,20 @@ conda activate procerss_lrs3
 python data_gen/process_lrs3/binarizer.py
 ```
 
+# Step4. Verification
 Then you may find a directory at the path  `data/binary/lrs3/`
+After the above steps, the structure of your `data` directory should look like this:
+
+```
+> data
+    > binary
+        > lrs3
+            sizes_train.npy
+            sizes_val.npy
+            spk_id2ispk_idx.npy
+            stats.npy
+            train.data
+            train.idx
+            val.data
+            val.idx
+```

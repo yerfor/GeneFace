@@ -56,14 +56,6 @@ bash scripts/infer_lm3d_nerf.sh
 ## 准备数据
 请参照`docs/process_data`文件夹中的步骤.
 
-🔥 更新：由于LRS3数据集数据量较大（500小时+），其处理过程非常消耗计算资源（使用4个RTX2080ti需要一周时间），因此我们在百度云盘提供了处理好的LRS3数据集（总共约35GB）。
-- [下载链接](https://pan.baidu.com/s/1fLu7c0lYv3FhGLH6YJsZbw?pwd=lrs3)，提取码：`lrs3`。
-- 如何使用: 
-    - 步骤1：将拆分的子文件还原成压缩包 `cat lrs3_0722.zip.part_* > lrs3_0722.zip` 。
-    - 步骤2：将压缩包解压，并将其移动到 `data/binary/lrs3` 目录下。
-- 免责声明：我们提供的文件仅包含了经过数据脱敏处理的特征（比如HuBET作为音频的表征），没有侵犯LRS3中视频的版权。
-
-
 ## 训练模型
 
 请参照`docs/train_models`文件夹中的步骤.

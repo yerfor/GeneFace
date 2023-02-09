@@ -38,4 +38,19 @@ conda activate procerss_lrs3
 python data_gen/process_lrs3/binarizer.py 
 ```
 
-如果上述步骤都顺利完成的话，您将能在 `data/binary/lrs3`路径看到处理好的LRS3数据集。
+## 步骤4. 验证
+如果上述步骤都顺利完成的话，您将能在 `data/binary/lrs3`路径看到处理好的LRS3数据集。理想状态下，你的`data`文件夹内部结构应该是类似这样的：
+
+```
+> data
+    > binary
+        > lrs3
+            sizes_train.npy
+            sizes_val.npy
+            spk_id2ispk_idx.npy
+            stats.npy
+            train.data
+            train.idx
+            val.data
+            val.idx
+```

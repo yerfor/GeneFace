@@ -58,15 +58,6 @@ Please follow the steps in `docs/prepare_env`.
 ## Prepare Datasets
 Please follow the steps in `docs/process_data`.
 
-🔥 Update: Since LRS3 is quite big (500 hours+), it is expensive to process this dataset (e.g., four RTX2080ti GPUs for a week). For your convenience, we provide the binarized LRS3 dataset file (about 35 GB) on Baidu Drive. 
-- Download at [this link](https://pan.baidu.com/s/1fLu7c0lYv3FhGLH6YJsZbw?pwd=lrs3) with the password `lrs3`. 
-- How to use: 
-    - step1. Integrate the segments `cat lrs3_0722.zip.part_* > lrs3_0722.zip` .
-    - step2. Unzip `lrs3_0722.zip` and place it into the `data/binary/lrs3` folder.
-- Disclaimer: the provided binarized dataset file only contains data-masked features (such as HuBERT for audio representations), so it does not viloate the copyright of LRS3.
-
-
-
 ## Train Models
 
 Please follow the steps in `docs/train_models`.
