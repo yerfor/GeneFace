@@ -168,6 +168,14 @@ class BaseNeRFInfer:
         """
         process the item into torch.tensor batch
         """
+        if self.inp.get('c2w_name','') != '':
+            print(f"loaded head pose from {self.inp['c2w_name']}")
+            c2w_arr = np.load(self.inp['c2w_name'])[0] # [T, 3, 3]
+            assert len(samples) - len(c2w_arr) < 5
+            if len(samples) > len(c2w_arr):
+                samples = samples[:len(c2w_arr)]
+            if len(samples) < len(c2w_arr):
+                c2w_arr = c2w_arr[:len(samples)]
         for idx, sample in enumerate(samples):
             if idx >= len(self.dataset.samples):
                 del samples[idx:]
@@ -181,7 +189,10 @@ class BaseNeRFInfer:
             sample['far'] = hparams['far']
             sample['bc_img'] = self.dataset.bc_img
 
-            sample['c2w'] = self.dataset.samples[idx]['c2w'][:3]
+            if self.inp.get('c2w_name','') != '':
+                sample['c2w'] = torch.from_numpy(c2w_arr[idx])
+            else:
+                sample['c2w'] = self.dataset.samples[idx]['c2w'][:3]
             sample['c2w_t0'] = self.dataset.samples[0]['c2w'][:3]
 
             sample['t'] = torch.tensor([0,]).float()
@@ -229,6 +240,8 @@ class BaseNeRFInfer:
             inp['audio_source_name'] = hparams['infer_audio_source_name'] 
         if hparams.get("infer_out_video_name", '') != '':
             inp['out_video_name'] = hparams['infer_out_video_name']
+        if hparams.get("infer_c2w_name", '') != '':
+            inp['c2w_name'] = hparams['infer_c2w_name']
         out_dir = os.path.dirname(inp['out_video_name'])
         video_name = os.path.basename(inp['out_video_name'])[:-4]
         tmp_imgs_dir = os.path.join(out_dir, "tmp_imgs", video_name)

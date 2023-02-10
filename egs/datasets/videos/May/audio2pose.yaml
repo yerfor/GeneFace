@@ -1,0 +1,4 @@
+base_config: 
+  - egs/egs_bases/audio2pose/base.yaml
+
+video_id: May # the video file should be located at `data/raw/videos/<video_id>.mp4`

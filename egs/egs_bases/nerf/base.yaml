@@ -68,3 +68,4 @@ infer_out_video_name: ''
 infer_scale_factor: 0.25
 infer_smo_std: 0.
 infer_audio_source_name: ''
+infer_c2w_name: ''
