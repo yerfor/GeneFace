@@ -12,13 +12,13 @@
 
 ## 1.2 PCA Basis
 
-通过这个链接下载：[链接](https://github.com/Juyong/3DFace/blob/master/Exp_Pca.bin)
+通过这个链接下载：[链接](https://drive.google.com/drive/folders/1iTopSpZucEmjWiWZIErLYiMBlZYwzil2?usp=share_link)
 
 获得其中的 `Exp_Pca.bin`存到 `./deep_3drecon/BFM` 路径
 
 ## 1.3 BFM Model Front
 
-通过这个链接下载：[链接](https://cloud.tsinghua.edu.cn/f/b1a0e03bdb69445f8148/?dl=1)
+通过这个链接下载：[链接](https://drive.google.com/drive/folders/1YCxXKJFfo1w01PzayhnxWSZZK5k7spSH?usp=share_link)
 
 获得其中的 ` BFM_model_front.mat` 存到 `./deep_3drecon/BFM` 路径
 

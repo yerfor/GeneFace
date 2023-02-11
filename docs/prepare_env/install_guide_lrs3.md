@@ -10,21 +10,21 @@ The following installation process is verified in RTX2080, Ubuntu 16.04. It may 
 
 Apply in [this link](https://faces.dmi.unibas.ch/bfm/).
 
-You can get a `BaselFaceModel.tgz`, unzip it, unzip it and get `01_MorphableModel.mat` and save it to the `./deep_3drecon/BFM ` folder
+You can get a `BaselFaceModel.tgz`, unzip it, unzip it and get `01_MorphableModel.mat` and save it to the `./deep_3drecon/BFM` folder
 
 ## 1.2 PCA Basis
 
-Download at [this link](https://github.com/Juyong/3DFace/blob/master/Exp_Pca.bin)
+Download at [this link](https://drive.google.com/drive/folders/1iTopSpZucEmjWiWZIErLYiMBlZYwzil2?usp=share_link)
 
 Extract the `Exp_Pca.bin` and place it to the `./deep_3drecon/BFM` directory.
 
 ## 1.3 BFM Model Front
 
-Download at [this link](https://cloud.tsinghua.edu.cn/f/b1a0e03bdb69445f8148/?dl=1)
+Download at [this link](https://drive.google.com/drive/folders/1YCxXKJFfo1w01PzayhnxWSZZK5k7spSH?usp=share_link)
 
 Extract the `BFM_model_front.mat` and place it to the `./deep_3drecon/BFM` directory.
 
-Extract the `BFM_model_front.mat` and place it to the `./deep_3drecon/BFM_models` directory.
+Extract the `BFM_model_front.mat` and place it to the `./deep_util/BFM_models` directory.
 
 # 2. Install the python libraries
 
