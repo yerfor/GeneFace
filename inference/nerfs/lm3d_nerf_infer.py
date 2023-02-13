@@ -72,8 +72,9 @@ class LM3dNeRFInfer(BaseNeRFInfer):
         deepspeech_name = wav16k_name[:-4] + '_deepspeech.npy'
         if not os.path.exists(deepspeech_name):
             print(f"Try to extract deepspeech from {wav16k_name}...")
-            deepspeech_python = '/home/yezhenhui/anaconda3/envs/geneface/bin/python' # the path of your python interpreter that has installed DeepSpeech
-            extract_deepspeech_cmd = f'{deepspeech_python} data_util/deepspeech_features/extract_ds_features.py --input={wav16k_name} --output={deepspeech_name}'
+            # deepspeech_python = '/home/yezhenhui/anaconda3/envs/geneface/bin/python' # the path of your python interpreter that has installed DeepSpeech
+            # extract_deepspeech_cmd = f'{deepspeech_python} data_util/deepspeech_features/extract_ds_features.py --input={wav16k_name} --output={deepspeech_name}'
+            extract_deepspeech_cmd = f'python data_util/deepspeech_features/extract_ds_features.py --input={wav16k_name} --output={deepspeech_name}'
             os.system(extract_deepspeech_cmd)
             print(f"Saved deepspeech features of {wav16k_name} to {deepspeech_name}.")
         else:
