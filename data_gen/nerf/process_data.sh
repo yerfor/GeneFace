@@ -9,6 +9,9 @@ python data_util/process_data.py --id=$1 --step=6 &
 python data_util/process_data.py --id=$1 --step=3
 # 4. extract background image
 python data_util/process_data.py --id=$1 --step=4
+# Optional: Once the background image is extracted before running step 5,
+# you could use a image inpainting tool (such as Inpaint on MacOS)
+# to edit the backgroud image, so it could be more realistic.
 # 5. save head and com imgs
 python data_util/process_data.py --id=$1 --step=5
 wait

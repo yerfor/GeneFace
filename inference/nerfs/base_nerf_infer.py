@@ -151,6 +151,7 @@ class BaseNeRFInfer:
             torch.multiprocessing.set_sharing_strategy('file_system')
             batches = copy.deepcopy(batches)
             mp.spawn(self._forward_nerf_task_ddp, nprocs=self.num_gpus, args=[batches, copy.deepcopy(hparams                                                                                                                                                           )])
+            img_dir = self.inp['tmp_imgs_dir']
         else:
             self.nerf_task = self.build_nerf_task()
             self.nerf_task.eval()
@@ -268,4 +269,3 @@ class BaseNeRFInfer:
         extract_wav_cmd = f"ffmpeg -i {source_name} -v quiet -f wav -ar 16000 {wav16k_name} -y"
         os.system(extract_wav_cmd)
         print(f"Saved 16khz wav file to {wav16k_name}.")
-    
