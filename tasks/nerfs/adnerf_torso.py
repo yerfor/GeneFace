@@ -12,7 +12,7 @@ from utils.commons.ckpt_utils import load_ckpt
 from utils.nn.model_utils import print_arch
 from utils.nn.grad import get_grad_norm, GradBuffer
 from utils.nn.model_utils import print_arch, get_device_of_model, not_requires_grad
-from utils.commons.tensor_utils import tensors_to_scalars, tensors_to_np, move_to_cuda, convert_to_tensor
+from utils.commons.tensor_utils import tensors_to_scalars, convert_to_np, move_to_cuda, convert_to_tensor
 from utils.commons.ckpt_utils import load_ckpt
 from utils.nn.schedulers import ExponentialSchedule, ExponentialScheduleWithAudattNet
 

@@ -31,14 +31,14 @@ def tensors_to_scalars(tensors):
         return tensors
 
 
-def tensors_to_np(tensors):
+def convert_to_np(tensors):
     if isinstance(tensors, dict):
         new_np = {}
         for k, v in tensors.items():
             if isinstance(v, torch.Tensor):
                 v = v.cpu().numpy()
             if type(v) is dict:
-                v = tensors_to_np(v)
+                v = convert_to_np(v)
             new_np[k] = v
     elif isinstance(tensors, list):
         new_np = []
@@ -46,14 +46,14 @@ def tensors_to_np(tensors):
             if isinstance(v, torch.Tensor):
                 v = v.cpu().numpy()
             if type(v) is dict:
-                v = tensors_to_np(v)
+                v = convert_to_np(v)
             new_np.append(v)
     elif isinstance(tensors, torch.Tensor):
         v = tensors
         if isinstance(v, torch.Tensor):
             v = v.cpu().numpy()
         if type(v) is dict:
-            v = tensors_to_np(v)
+            v = convert_to_np(v)
         new_np = v
     else:
         raise Exception(f'tensors_to_np does not support type {type(tensors)}.')

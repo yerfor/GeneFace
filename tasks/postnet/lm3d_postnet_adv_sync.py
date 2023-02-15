@@ -5,7 +5,7 @@ from utils.commons.base_task import BaseTask
 from utils.commons.dataset_utils import data_loader
 from utils.commons.hparams import hparams
 from utils.commons.ckpt_utils import load_ckpt
-from utils.commons.tensor_utils import tensors_to_scalars, tensors_to_np
+from utils.commons.tensor_utils import tensors_to_scalars, convert_to_np
 from utils.nn.model_utils import print_arch
 
 from modules.postnet.models import CNNPostNet, MLPDiscriminator

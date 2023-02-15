@@ -148,6 +148,7 @@ class BaseNeRFInfer:
                 for k in list(batch.keys()):
                     del batch[k]
                 torch.cuda.empty_cache()
+        dist.barrier()
         return tmp_imgs_dir
 
     def forward_system(self, batches):
@@ -155,7 +156,7 @@ class BaseNeRFInfer:
             del self.dataset
             torch.multiprocessing.set_sharing_strategy('file_system')
             batches = copy.deepcopy(batches)
-            mp.spawn(self._forward_nerf_task_ddp, nprocs=self.num_gpus, args=[batches, copy.deepcopy(hparams                                                                                                                                                           )])
+            mp.spawn(self._forward_nerf_task_ddp, nprocs=self.num_gpus, args=[batches, copy.deepcopy(hparams)])
             img_dir = self.inp['tmp_imgs_dir']
         else:
             self.nerf_task = self.build_nerf_task()
@@ -246,8 +247,6 @@ class BaseNeRFInfer:
         samples = self.get_cond_from_input(inp)
         batches = self.get_pose_from_ds(samples)
         image_dir = self.forward_system(batches)
-        if self.use_ddp:
-            dist.barrier()
         if self.proc_rank == 0:
             out_name = self.postprocess_output(image_dir)
             print(f"The synthesized video is saved at {out_name}")

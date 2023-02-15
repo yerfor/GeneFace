@@ -13,7 +13,7 @@ from utils.commons.base_task import BaseTask
 from utils.commons.dataset_utils import data_loader
 from utils.commons.hparams import hparams
 from utils.commons.ckpt_utils import load_ckpt
-from utils.commons.tensor_utils import tensors_to_scalars, tensors_to_np, move_to_cuda
+from utils.commons.tensor_utils import tensors_to_scalars, convert_to_np, move_to_cuda
 from utils.nn.model_utils import print_arch, num_params
 from utils.nn.schedulers import ExponentialScheduleWithAudattNet
 from utils.nn.grad import get_grad_norm
@@ -247,6 +247,6 @@ class ADNeRFTask(BaseTask):
     #####################
     @staticmethod
     def save_result(rgb, base_fname, gen_dir):
-        rgb = tensors_to_np(rgb * 255.).astype(np.uint8)
+        rgb = convert_to_np(rgb * 255.).astype(np.uint8)
         bgr = cv2.cvtColor(rgb, cv2.COLOR_RGB2BGR)
         cv2.imwrite(f"{gen_dir}/imgs/{base_fname}.jpg", bgr)

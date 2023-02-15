@@ -6,7 +6,7 @@ from utils.commons.base_task import BaseTask
 from utils.commons.dataset_utils import data_loader
 from utils.commons.hparams import hparams
 from utils.commons.ckpt_utils import load_ckpt
-from utils.commons.tensor_utils import tensors_to_scalars, tensors_to_np
+from utils.commons.tensor_utils import tensors_to_scalars, convert_to_np
 from utils.nn.model_utils import print_arch, get_device_of_model, not_requires_grad
 from utils.nn.schedulers import ExponentialSchedule
 from utils.nn.grad import get_grad_norm
@@ -164,7 +164,7 @@ class VAESyncAudio2MotionTask(BaseTask):
 
     @staticmethod
     def save_result(exp_arr, base_fname, gen_dir):
-        exp_arr = tensors_to_np(exp_arr)
+        exp_arr = convert_to_np(exp_arr)
         np.save(f"{gen_dir}/{base_fname}.npy", exp_arr)
     
     def get_grad(self, opt_idx):
