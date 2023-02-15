@@ -55,13 +55,13 @@ class GMMLogLoss(nn.Module):
 
         MU_DIFF = target_rep - mus  # [b, T, ncenter, ndim]
         # sigma process
-        A = 0.5 * math.log(2 * math.pi)   # 0.9189385332046727
-        B = neg_log_sigmas  # [b, T, ncenter, ndim]
-        C = 0.5 * (MU_DIFF * inv_sigmas)**2  # [b, T, ncenter, ndim]
-        negative_loglikelihood =  A - B + C  # [b, T, ncenter, ndim]
+        # A = 0.5 * math.log(2 * math.pi)   # 0.9189385332046727
+        # B = neg_log_sigmas  # [b, T, ncenter, ndim]
+        # C = 0.5 * (MU_DIFF * inv_sigmas)**2  # [b, T, ncenter, ndim]
+        # negative_loglikelihood =  A - B + C  # [b, T, ncenter, ndim]
         
-        return negative_loglikelihood.mean()
-    
+        # return negative_loglikelihood.mean()
+        return (MU_DIFF**2).mean()
 
 def Sample_GMM(gmm_params, ncenter, ndim, weight_smooth=0.0, sigma_scale=0.0):
     '''Sample values from a given a GMM distribution.

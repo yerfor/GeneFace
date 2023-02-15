@@ -130,6 +130,8 @@ class BaseNeRFInfer:
             idx_batch_lst = idx_batch_lst[self.proc_rank*num_batchs_per_gpu:]
         
         H, W = batches[0]['H'], batches[0]['W']
+        H = int(hparams['infer_scale_factor']*H)
+        W = int(hparams['infer_scale_factor']*W)
         with torch.no_grad():
             for (idx, batch) in tqdm.tqdm(idx_batch_lst, total=len(idx_batch_lst),
                                 desc=f"Process {self.proc_rank} : NeRF is rendering frames into {tmp_imgs_dir}."):
@@ -172,14 +174,16 @@ class BaseNeRFInfer:
         """
         process the item into torch.tensor batch
         """
-        if self.inp.get('c2w_name','') != '':
-            print(f"loaded head pose from {self.inp['c2w_name']}")
+        if self.use_pred_pose:
+            print(f"loaded head pose from {self.inp['c2w_name']}.")
             c2w_arr = np.load(self.inp['c2w_name'])[0] # [T, 3, 3]
             assert len(samples) - len(c2w_arr) < 5
             if len(samples) > len(c2w_arr):
                 samples = samples[:len(c2w_arr)]
             if len(samples) < len(c2w_arr):
                 c2w_arr = c2w_arr[:len(samples)]
+        else:
+            print("use head pose from GT frames.")
         for idx, sample in enumerate(samples):
             if idx >= len(self.dataset.samples):
                 del samples[idx:]
@@ -193,7 +197,7 @@ class BaseNeRFInfer:
             sample['far'] = hparams['far']
             sample['bc_img'] = self.dataset.bc_img
 
-            if self.inp.get('c2w_name','') != '':
+            if self.use_pred_pose:
                 sample['c2w'] = torch.from_numpy(c2w_arr[idx])
             else:
                 sample['c2w'] = self.dataset.samples[idx]['c2w'][:3]
@@ -211,7 +215,8 @@ class BaseNeRFInfer:
             euler_arr = torch.stack([s['euler'] for s in samples]).numpy()
             trans_arr = torch.stack([s['trans'] for s in samples]).numpy()
             headpose = np.concatenate([euler_arr, trans_arr], axis=1)
-            smo_headpose = self.headpose_smooth(headpose)
+            smo_sigmas = [3, 3] if self.use_pred_pose else [0.5, 0.5]
+            smo_headpose = self.headpose_smooth(headpose, smo_sigmas)
             smo_euler_arr, smo_trans_arr = smo_headpose[:,:3],  smo_headpose[:,3:]
             for i, sample in enumerate(samples):
                 sample['euler'] = torch.tensor(np.ascontiguousarray(smo_euler_arr[i])).float()
@@ -219,7 +224,7 @@ class BaseNeRFInfer:
                 sample['c2w'] = euler_trans_2_c2w(sample['euler'], sample['trans'])
         return samples
 
-    def headpose_smooth(self, headpose, smooth_sigmas=[0.1,0.1]):
+    def headpose_smooth(self, headpose, smooth_sigmas=[0.5,0.5]):
         """
         head_pose: [T, 3+3], torch.cat([euler, trans],dim=1)
         """
@@ -237,6 +242,7 @@ class BaseNeRFInfer:
 
     def infer_once(self, inp):
         self.inp = inp
+        self.use_pred_pose = True if self.inp.get('c2w_name','') != '' else False
         samples = self.get_cond_from_input(inp)
         batches = self.get_pose_from_ds(samples)
         image_dir = self.forward_system(batches)

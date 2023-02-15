@@ -3,7 +3,6 @@ base_config:
 
 task_cls: tasks.nerfs.lm3d_nerf.Lm3dNeRFTask
 cond_type: idexp_lm3d_normalized
-lm3d_scale_factor: 1.0
 no_smo_iterations: 20_0000
 
 use_window_cond: true # the NeRF only takes the exp at current frame as condition

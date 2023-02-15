@@ -38,9 +38,10 @@ optimizer_adam_beta2: 0.999
 scheduler: exponential # exponential|rsqrt|warmup|none|step_lr
 warmup_updates: 1000
 
-valid_infer_interval: 100
-val_check_interval: 100
-num_ckpt_keep: 100
+valid_infer_interval: 1000
+val_check_interval: 1000
+num_ckpt_keep: 10
 
 infer_audio_source_name: ''
 infer_out_npy_name: ''
+reception_field: 100

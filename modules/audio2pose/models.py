@@ -5,20 +5,21 @@ from torchvision import models
 from torch.nn import functional as F
 from torch.nn.utils.rnn import pad_packed_sequence, pack_padded_sequence
 import tqdm
-from scipy.ndimage import gaussian_filter1d
 from modules.audio2pose.gmm_utils import Sample_GMM
 from utils.commons.tensor_utils import convert_to_tensor
 
 class Audio2PoseModel(nn.Module):
-    def __init__(self):
+    def __init__(self, recept_field=100):
         super(Audio2PoseModel, self).__init__()
         self.audio_encoder = nn.Sequential(
-            nn.Linear(in_features=1024*2, out_features=256),
+            # nn.Linear(in_features=1024*2, out_features=256),
+            nn.Linear(in_features=2*29, out_features=256),
             nn.LeakyReLU(0.2),
             nn.Linear(256, 256)
         )
         self.backbone = WaveNet()
-        self.recept_field = 30
+        # self.recept_field = 30
+        self.recept_field = recept_field
     
     def forward(self, audio, history_pose_velocity):
         """
@@ -31,13 +32,6 @@ class Audio2PoseModel(nn.Module):
         # pred_pose_velocity_params = ret[:, -1, :] # [b, c]
         # return pred_pose_velocity_params
         return ret
-
-    def headpose_smooth(self, headpose, smooth_sigmas=[5,10]):
-        rot_sigma, trans_sigma = smooth_sigmas
-        rot = gaussian_filter1d(headpose.reshape(-1, 6)[:,:3], rot_sigma, axis=0).reshape(-1, 3)
-        trans = gaussian_filter1d(headpose.reshape(-1, 6)[:,3:], trans_sigma, axis=0).reshape(-1, 3)
-        headpose_smooth = np.concatenate([rot, trans], axis=1)
-        return headpose_smooth
 
     def autoregressive_infer(self, long_audio, init_pose=None):
         """
@@ -59,12 +53,13 @@ class Audio2PoseModel(nn.Module):
                 audio_window = long_audio[i: i+self.recept_field].unsqueeze(0) # [b=1, t=30, c=512]
                 history_info = history_pose_and_velocity.unsqueeze(0) # [b=1, t=30, c=12]
                 pred_pose_and_velocity_gmm_params = self.forward(audio_window, history_info)[:,-1,:] # [b=1, c=12*2+1]
-                pred_pose_and_velocity = Sample_GMM(pred_pose_and_velocity_gmm_params.unsqueeze(1),ncenter=1,ndim=12,sigma_scale=0.3).to(long_audio.device) # [b=1,t=1,c=12]
+                pred_pose_and_velocity = Sample_GMM(pred_pose_and_velocity_gmm_params.unsqueeze(1),ncenter=1,ndim=12,sigma_scale=0.0).to(long_audio.device) # [b=1,t=1,c=12]
                 pred_pose_and_velocity_lst.append(pred_pose_and_velocity.cpu().squeeze()) # [c=12]
                 history_pose_and_velocity = torch.cat([history_pose_and_velocity[1:,:], pred_pose_and_velocity.squeeze(0)],dim=0) # [29,c=12] + [1, c=12] ==> [30, c=12]
         pred_pose_and_velocity = torch.stack(pred_pose_and_velocity_lst) # [T, c=12]
-        smo_pred_pose = self.headpose_smooth(pred_pose_and_velocity[:,:6])
-        return torch.from_numpy(smo_pred_pose)
+        pred_pose = pred_pose_and_velocity[:,:6]
+        return pred_pose
+
 
 class WaveNet(nn.Module):
     ''' 
@@ -87,7 +82,8 @@ class WaveNet(nn.Module):
         `` loss(str): GMM loss is adopted. ``
     '''
     def __init__(self,
-                 residual_layers = 7,
+                #  residual_layers = 7,
+                 residual_layers = 3,
                  residual_blocks = 2,
                  dilation_channels = 128,
                  residual_channels = 128,

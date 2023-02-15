@@ -24,7 +24,7 @@ class Audio2PoseTask(BaseTask):
         self.gmm_loss_fn = GMMLogLoss(ncenter=1, ndim=12, sigma_min=0.03)
 
     def build_model(self):
-        self.model = Audio2PoseModel()
+        self.model = Audio2PoseModel(hparams['reception_field'])
         return self.model
 
     def build_optimizer(self, model):

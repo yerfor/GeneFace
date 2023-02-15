@@ -35,8 +35,8 @@ class Audio2PoseInfer:
         task = task_cls()
         task.build_model()
         task.eval()
-        steps = hparams.get('infer_ckpt_steps', 5000)
-        # steps = None
+        # steps = hparams.get('infer_ckpt_steps', 5000)
+        steps = None
         load_ckpt(task.model, hparams['work_dir'], 'model', steps=steps)
         ckpt, _ = get_last_checkpoint(hparams['work_dir'], steps=steps)
         task.global_step = ckpt['global_step']
@@ -53,21 +53,41 @@ class Audio2PoseInfer:
         :param inp: {'audio_source_name': (str)}
         :return: a list that contains the condition feature of NeRF
         """
+
         self.save_wav16k(inp)
-        from data_gen.process_lrs3.process_audio_hubert import get_hubert_from_16k_wav
-        hubert = get_hubert_from_16k_wav(self.wav16k_name).detach().numpy()
-        len_mel = hubert.shape[0]
-        x_multiply = 8
-        if len_mel % x_multiply == 0:
-            num_to_pad = 0
+        # from data_gen.process_lrs3.process_audio_hubert import get_hubert_from_16k_wav
+        # hubert = get_hubert_from_16k_wav(self.wav16k_name).detach().numpy()
+        # len_mel = hubert.shape[0]
+        # x_multiply = 8
+        # if len_mel % x_multiply == 0:
+        #     num_to_pad = 0
+        # else:
+        #     num_to_pad = x_multiply - len_mel % x_multiply
+        # hubert = np.pad(hubert, pad_width=((0,num_to_pad), (0,0))) # [t_x, 1024]
+        # t_x = hubert.shape[0]
+        # hubert = hubert.reshape([t_x//2, 1024*2])
+        # sample = {
+        #     'hubert': torch.from_numpy(hubert).float().unsqueeze(0), # [1, T, 2048]
+        #     }
+
+        # load the deepspeech features as the condition for lm3d torso nerf
+        wav16k_name = self.wav16k_name
+        deepspeech_name = wav16k_name[:-4] + '_deepspeech.npy'
+        if not os.path.exists(deepspeech_name):
+            print(f"Try to extract deepspeech from {wav16k_name}...")
+            # deepspeech_python = '/home/yezhenhui/anaconda3/envs/geneface/bin/python' # the path of your python interpreter that has installed DeepSpeech
+            # extract_deepspeech_cmd = f'{deepspeech_python} data_util/deepspeech_features/extract_ds_features.py --input={wav16k_name} --output={deepspeech_name}'
+            extract_deepspeech_cmd = f'python data_util/deepspeech_features/extract_ds_features.py --input={wav16k_name} --output={deepspeech_name}'
+            os.system(extract_deepspeech_cmd)
+            print(f"Saved deepspeech features of {wav16k_name} to {deepspeech_name}.")
         else:
-            num_to_pad = x_multiply - len_mel % x_multiply
-        hubert = np.pad(hubert, pad_width=((0,num_to_pad), (0,0))) # [t_x, 1024]
-        t_x = hubert.shape[0]
-        hubert = hubert.reshape([t_x//2, 1024*2])
-        sample = {
-            'hubert': torch.from_numpy(hubert).float().unsqueeze(0), # [1, T, 2048]
-            }
+            print(f"Try to load pre-extracted deepspeech from {deepspeech_name}...")
+        deepspeech_arr = np.load(deepspeech_name) # [T, w=16, c=29]
+        print(f"Loaded deepspeech features from {deepspeech_name}.")
+        # get window condition of deepspeech
+        sample = {}
+        # sample['deepspeech'] = torch.from_numpy(deepspeech_arr).float().reshape([-1, 16*29])
+        sample['deepspeech'] = torch.from_numpy(deepspeech_arr[:, 7:9,:]).float().reshape([-1, 2*29])
         return [sample]
 
     def forward_system(self, batches, inp):
@@ -82,7 +102,8 @@ class Audio2PoseInfer:
                 if self.device == 'cuda':
                     batch = move_to_cuda(batch)
 
-                smo_pred_pose = self.audio2pose_task.model.autoregressive_infer(batch['hubert'].squeeze(), self.init_pose)
+                # smo_pred_pose = self.audio2pose_task.model.autoregressive_infer(batch['hubert'].squeeze(), self.init_pose)
+                smo_pred_pose = self.audio2pose_task.model.autoregressive_infer(batch['deepspeech'].squeeze(), self.init_pose)
                 smo_pred_pose = smo_pred_pose.squeeze().cpu().numpy()
                 euler, trans = smo_pred_pose[:,:3], smo_pred_pose[:,3:6]
                 trans = trans + self.mean_trans

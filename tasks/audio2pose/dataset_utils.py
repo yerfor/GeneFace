@@ -23,8 +23,9 @@ class Audio2PoseDataset(torch.utils.data.Dataset):
         self.trans_lst = [None] * self.num_samples
         for i in range(self.num_samples):
             sample = self.samples[i]
-            audio_win_size = sample['hubert_win'].shape[0]
-            audio = sample['hubert_win'][audio_win_size//2-1:audio_win_size//2+1].reshape([2*1024])
+            # audio_win_size = sample['hubert_win'].shape[0]
+            # audio = sample['hubert_win'][audio_win_size//2-1:audio_win_size//2+1].reshape([2*1024])
+            audio = sample['deepspeech_win'][7:9,:].reshape([2*29])
             self.audio_lst[i] = audio
             self.euler_lst[i] = sample['euler']
             self.trans_lst[i] = sample['trans']
@@ -37,7 +38,8 @@ class Audio2PoseDataset(torch.utils.data.Dataset):
         self.audio_lst = torch.stack(self.audio_lst)
         self.pose_lst = torch.stack(self.pose_lst)
         self.pose_velocity_lst = torch.stack(self.pose_velocity_lst)
-        self.reception_field = 30
+        # self.reception_field = 30
+        self.reception_field = hparams['reception_field']
         self.target_length = 5
 
     def __getitem__(self, idx):
