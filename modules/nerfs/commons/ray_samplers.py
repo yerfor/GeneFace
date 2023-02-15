@@ -173,7 +173,9 @@ class FullRaySampler(BaseRaySampler):
         super().__init__(N_rays=None)
 
     def sample_rays(self, H, W, **kwargs):
-        h, w = torch.meshgrid([torch.linspace(0,H-1,H), torch.linspace(0,W-1,W)])
+        num_h_points = int(H*hparams['infer_scale_factor'])
+        num_w_points = int(W*hparams['infer_scale_factor'])
+        h, w = torch.meshgrid([torch.linspace(0,H-1,num_h_points), torch.linspace(0,W-1,num_w_points)])
         h = h.reshape([-1,1]).long()
         w = w.reshape([-1,1]).long()
         select_coords = torch.cat([h, w], dim=-1)# (n_rays, 2)

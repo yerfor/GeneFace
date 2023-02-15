@@ -19,6 +19,7 @@ from utils.commons.euler2rot import euler_trans_2_c2w, c2w_to_euler_trans
 from utils.commons.tensor_utils import move_to_cpu, move_to_cuda
 
 from tasks.nerfs.dataset_utils import NeRFDataset
+from scipy.ndimage import gaussian_filter1d
 
 
 class BaseNeRFInfer:
@@ -57,6 +58,8 @@ class BaseNeRFInfer:
         tmp_imgs_dir = self.inp['tmp_imgs_dir']
         os.makedirs(tmp_imgs_dir, exist_ok=True)
         H, W = batches[0]['H'], batches[0]['W']
+        H = int(hparams['infer_scale_factor']*H)
+        W = int(hparams['infer_scale_factor']*W)
         idx_batch_lst = [(idx, batch) for idx,batch in enumerate(batches)]
 
         with torch.no_grad():
@@ -203,7 +206,28 @@ class BaseNeRFInfer:
             sample['trans'] = torch.tensor(np.ascontiguousarray(trans)).float()
             sample['euler_t0'] = torch.tensor(np.ascontiguousarray(euler_t0)).float()
             sample['trans_t0'] = torch.tensor(np.ascontiguousarray(trans_t0)).float()
+            
+        if hparams.get("infer_smo_head_pose", True) is True:
+            euler_arr = torch.stack([s['euler'] for s in samples]).numpy()
+            trans_arr = torch.stack([s['trans'] for s in samples]).numpy()
+            headpose = np.concatenate([euler_arr, trans_arr], axis=1)
+            smo_headpose = self.headpose_smooth(headpose)
+            smo_euler_arr, smo_trans_arr = smo_headpose[:,:3],  smo_headpose[:,3:]
+            for i, sample in enumerate(samples):
+                sample['euler'] = torch.tensor(np.ascontiguousarray(smo_euler_arr[i])).float()
+                sample['trans'] = torch.tensor(np.ascontiguousarray(smo_trans_arr[i])).float()
+                sample['c2w'] = euler_trans_2_c2w(sample['euler'], sample['trans'])
         return samples
+
+    def headpose_smooth(self, headpose, smooth_sigmas=[0.1,0.1]):
+        """
+        head_pose: [T, 3+3], torch.cat([euler, trans],dim=1)
+        """
+        rot_sigma, trans_sigma = smooth_sigmas
+        rot = gaussian_filter1d(headpose.reshape(-1, 6)[:,:3], rot_sigma, axis=0).reshape(-1, 3)
+        trans = gaussian_filter1d(headpose.reshape(-1, 6)[:,3:], trans_sigma, axis=0).reshape(-1, 3)
+        headpose_smooth = np.concatenate([rot, trans], axis=1)
+        return headpose_smooth
 
     def postprocess_output(self, output):
         tmp_imgs_dir = self.inp['tmp_imgs_dir']
@@ -258,7 +282,7 @@ class BaseNeRFInfer:
     ##############
     @classmethod
     def save_mp4(self, img_dir, wav_name, out_name):
-        os.system(f"ffmpeg -i {img_dir}/%5d.png -i {wav_name} -shortest -v quiet -c:v libx264 -pix_fmt yuv420p -b:v 2000k -r 25 -strict -2 {out_name}")
+        os.system(f"ffmpeg -i {img_dir}/%5d.png -i {wav_name} -shortest -v quiet -c:v libx264 -pix_fmt yuv420p -b:v 2000k -r 25 -strict -2 -y {out_name}")
 
     def save_wav16k(self, inp):
         source_name = inp['audio_source_name']
