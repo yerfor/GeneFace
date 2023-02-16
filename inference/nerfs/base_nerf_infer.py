@@ -216,8 +216,14 @@ class BaseNeRFInfer:
         if hparams.get("infer_smo_head_pose", True) is True:
             euler_arr = torch.stack([s['euler'] for s in samples]).numpy()
             trans_arr = torch.stack([s['trans'] for s in samples]).numpy()
-            headpose = np.concatenate([euler_arr, trans_arr], axis=1)
-            smo_sigmas = [3, 3] if self.use_pred_pose else [2, 2]
+            headpose = np.concatenate([euler_arr, trans_arr], axis=1) # [N,6]
+
+            # headpose_mean, headpose_std = headpose.mean(axis=0, keepdims=True), headpose.std(axis=0, keepdims=True)
+            # headpose_normalized = (headpose - headpose_mean) / headpose_std
+            # headpose_normalized = np.clip(headpose_normalized, -3, 3)
+            # headpose = headpose_normalized * headpose_std + headpose_mean
+
+            smo_sigmas = [2, 2] #  if self.use_pred_pose else [2, 2]
             smo_headpose = self.headpose_smooth(headpose, smo_sigmas)
             smo_euler_arr, smo_trans_arr = smo_headpose[:,:3],  smo_headpose[:,3:]
             for i, sample in enumerate(samples):
