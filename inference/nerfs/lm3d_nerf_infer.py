@@ -56,7 +56,13 @@ class LM3dNeRFInfer(BaseNeRFInfer):
         idexp_lm3d_normalized = (idexp_lm3d.reshape([-1,68,3]) - idexp_lm3d_mean)/idexp_lm3d_std
         idexp_lm3d_normalized = idexp_lm3d_normalized.reshape([-1, 68*3])
         # torch.clamp() is adequate to ensure the stability of rendering head
-        idexp_lm3d_normalized = torch.clamp(idexp_lm3d_normalized, -1.5, 1.5)
+        idexp_lm3d_normalized = torch.clamp(idexp_lm3d_normalized, -2, 2)
+        idexp_lm3d_normalized = idexp_lm3d_normalized.reshape([-1,68,3])
+        edit_mouth_mask1 = idexp_lm3d_normalized[:,48:68,1] > 1
+        edit_mouth_mask2 = idexp_lm3d_normalized[:,48:68,1] < -1
+        idexp_lm3d_normalized[:,48:68,1][edit_mouth_mask1] = 1
+        idexp_lm3d_normalized[:,48:68,1][edit_mouth_mask2] = -1
+        idexp_lm3d_normalized = idexp_lm3d_normalized.reshape([-1, 68*3])
 
         idexp_lm3d_normalized_numpy = idexp_lm3d_normalized.cpu().numpy()
         idexp_lm3d_normalized_win_numpy = np.stack([get_win_conds(idexp_lm3d_normalized_numpy, i, smo_win_size=hparams['cond_win_size'], pad_option='edge') for i in range(idexp_lm3d_normalized_numpy.shape[0])])

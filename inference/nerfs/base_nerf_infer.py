@@ -185,6 +185,7 @@ class BaseNeRFInfer:
                 c2w_arr = c2w_arr[:len(samples)]
         else:
             print("use head pose from GT frames.")
+            
         for idx, sample in enumerate(samples):
             if idx >= len(self.dataset.samples):
                 del samples[idx:]
@@ -216,7 +217,7 @@ class BaseNeRFInfer:
             euler_arr = torch.stack([s['euler'] for s in samples]).numpy()
             trans_arr = torch.stack([s['trans'] for s in samples]).numpy()
             headpose = np.concatenate([euler_arr, trans_arr], axis=1)
-            smo_sigmas = [3, 3] if self.use_pred_pose else [0.5, 0.5]
+            smo_sigmas = [3, 3] if self.use_pred_pose else [2, 2]
             smo_headpose = self.headpose_smooth(headpose, smo_sigmas)
             smo_euler_arr, smo_trans_arr = smo_headpose[:,:3],  smo_headpose[:,3:]
             for i, sample in enumerate(samples):
@@ -225,7 +226,7 @@ class BaseNeRFInfer:
                 sample['c2w'] = euler_trans_2_c2w(sample['euler'], sample['trans'])
         return samples
 
-    def headpose_smooth(self, headpose, smooth_sigmas=[0.5,0.5]):
+    def headpose_smooth(self, headpose, smooth_sigmas):
         """
         head_pose: [T, 3+3], torch.cat([euler, trans],dim=1)
         """

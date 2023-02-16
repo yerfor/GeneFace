@@ -73,10 +73,9 @@ class NeRFDataset(torch.utils.data.Dataset):
                 'cond_wins': raw_sample['deepspeech_wins'], # [Win=8, T=16, C=29]
             })
         elif self.cond_type == 'idexp_lm3d_normalized':
-            scale_factor = hparams['lm3d_scale_factor'] # todo: 如果还是抖动、有bad case，试试把scale调小
-            sample['cond'] = scale_factor * raw_sample['idexp_lm3d_normalized'].reshape([1,-1]) # [1, 204]
-            sample['cond_win'] = scale_factor * raw_sample['idexp_lm3d_normalized_win'].reshape([1, hparams['cond_win_size'],-1]) # [1, T_win, 204]
-            sample['cond_wins'] = scale_factor * raw_sample['idexp_lm3d_normalized_wins'].reshape([hparams['smo_win_size'], hparams['cond_win_size'],-1]) # [smo_win, T_win, 204]
+            sample['cond'] = raw_sample['idexp_lm3d_normalized'].reshape([1,-1]) # [1, 204]
+            sample['cond_win'] = raw_sample['idexp_lm3d_normalized_win'].reshape([1, hparams['cond_win_size'],-1]) # [1, T_win, 204]
+            sample['cond_wins'] = raw_sample['idexp_lm3d_normalized_wins'].reshape([hparams['smo_win_size'], hparams['cond_win_size'],-1]) # [smo_win, T_win, 204]
             
             if hparams.get("use_hubert", False):
                 sample['hubert_win'] = raw_sample['hubert_win'].unsqueeze(0) # [Win=8, C=64]
