@@ -57,12 +57,34 @@ class LM3dNeRFInfer(BaseNeRFInfer):
         idexp_lm3d_normalized = idexp_lm3d_normalized.reshape([-1, 68*3])
         # torch.clamp() is adequate to ensure the stability of rendering head
         idexp_lm3d_normalized = torch.clamp(idexp_lm3d_normalized, -2, 2)
-        idexp_lm3d_normalized = idexp_lm3d_normalized.reshape([-1,68,3])
-        edit_mouth_mask1 = idexp_lm3d_normalized[:,48:68,1] > 1
-        edit_mouth_mask2 = idexp_lm3d_normalized[:,48:68,1] < -1
-        idexp_lm3d_normalized[:,48:68,1][edit_mouth_mask1] = 1
-        idexp_lm3d_normalized[:,48:68,1][edit_mouth_mask2] = -1
-        idexp_lm3d_normalized = idexp_lm3d_normalized.reshape([-1, 68*3])
+        edit_mouth_mask1 = idexp_lm3d_normalized.reshape([-1,68,3])[:,48:68,1] == 2
+        edit_mouth_mask2 = idexp_lm3d_normalized.reshape([-1,68,3])[:,48:68,1] == -2
+        edit_mouth_mask = torch.bitwise_or(edit_mouth_mask1,edit_mouth_mask2).sum(dim=1).bool() # [N,]
+        bad_slices = [] # list of (start_idx, dur)
+        start_idx = None
+        end_idx = None
+        is_bad_indexs = np.where(edit_mouth_mask.numpy())[0]
+        for idx in is_bad_indexs:
+            if start_idx is None:
+                start_idx = idx
+                end_idx = start_idx
+            else:
+                if idx - end_idx == 1:
+                    end_idx = idx
+                else:
+                    bad_slices.append([start_idx, end_idx])
+                    start_idx = idx
+                    end_idx = start_idx
+        bad_slices.append([start_idx, end_idx]) # the list of start,end index of outliers
+        for (start,end) in bad_slices: 
+            if end-start >= 5:
+                num_pad = 10
+                start = max(0, start - num_pad)
+                end = min(end+10,len(idexp_lm3d_normalized))
+                idexp_lm3d_normalized[start:end+1,48*3:68*3] = convert_to_tensor(gaussian_filter1d(idexp_lm3d_normalized[start:end+1,48*3:68*3].numpy(), sigma=1.0))
+        # idexp_lm3d_normalized[:,48:68,1][edit_mouth_mask1] = 1
+        # idexp_lm3d_normalized[:,48:68,1][edit_mouth_mask2] = -1
+        # idexp_lm3d_normalized = idexp_lm3d_normalized.reshape([-1, 68*3])
 
         idexp_lm3d_normalized_numpy = idexp_lm3d_normalized.cpu().numpy()
         idexp_lm3d_normalized_win_numpy = np.stack([get_win_conds(idexp_lm3d_normalized_numpy, i, smo_win_size=hparams['cond_win_size'], pad_option='edge') for i in range(idexp_lm3d_normalized_numpy.shape[0])])
