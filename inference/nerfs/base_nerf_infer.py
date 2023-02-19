@@ -62,9 +62,10 @@ class BaseNeRFInfer:
         W = int(hparams['infer_scale_factor']*W)
         idx_batch_lst = [(idx, batch) for idx,batch in enumerate(batches)]
 
+        print(f"The tmp imge dir is {tmp_imgs_dir}.")
         with torch.no_grad():
             for (idx, batch) in tqdm.tqdm(idx_batch_lst, total=len(idx_batch_lst),
-                                desc=f"NeRF is rendering frames into {tmp_imgs_dir}."):
+                                desc=f"NeRF is rendering frames..."):
                 torch.cuda.empty_cache()
                 if self.device == 'cuda':
                     batch = move_to_cuda(batch)
@@ -133,8 +134,10 @@ class BaseNeRFInfer:
         H = int(hparams['infer_scale_factor']*H)
         W = int(hparams['infer_scale_factor']*W)
         with torch.no_grad():
+            if dist.get_rank() == 0:
+                print(f"The tmp imge dir is {tmp_imgs_dir}.")
             for (idx, batch) in tqdm.tqdm(idx_batch_lst, total=len(idx_batch_lst),
-                                desc=f"Process {self.proc_rank} : NeRF is rendering frames into {tmp_imgs_dir}."):
+                                desc=f"Process {self.proc_rank} : NeRF is rendering frames..."):
                 torch.cuda.empty_cache()
                 if self.device == 'cuda':
                     batch = move_to_cuda(batch, self.root_gpu)
@@ -187,7 +190,8 @@ class BaseNeRFInfer:
             print("use head pose from GT frames.")
             
         for idx, sample in enumerate(samples):
-            if idx >= len(self.dataset.samples):
+            if idx >= len(self.dataset.samples) and not self.use_pred_pose:
+                # since we use GT head pose from the dataset, the pred_samples cannot be longer than the GT samples
                 del samples[idx:]
                 break
             sample['H'] = self.dataset.H
@@ -214,22 +218,19 @@ class BaseNeRFInfer:
             sample['trans_t0'] = torch.tensor(np.ascontiguousarray(trans_t0)).float()
             
         if hparams.get("infer_smo_head_pose", True) is True:
+
             euler_arr = torch.stack([s['euler'] for s in samples]).numpy()
             trans_arr = torch.stack([s['trans'] for s in samples]).numpy()
             headpose = np.concatenate([euler_arr, trans_arr], axis=1) # [N,6]
 
-            # headpose_mean, headpose_std = headpose.mean(axis=0, keepdims=True), headpose.std(axis=0, keepdims=True)
-            # headpose_normalized = (headpose - headpose_mean) / headpose_std
-            # headpose_normalized = np.clip(headpose_normalized, -3, 3)
-            # headpose = headpose_normalized * headpose_std + headpose_mean
-
-            smo_sigmas = [2, 2] #  if self.use_pred_pose else [2, 2]
+            smo_sigmas = [hparams['infer_pose_smooth_sigma'], hparams['infer_pose_smooth_sigma']]
             smo_headpose = self.headpose_smooth(headpose, smo_sigmas)
             smo_euler_arr, smo_trans_arr = smo_headpose[:,:3],  smo_headpose[:,3:]
             for i, sample in enumerate(samples):
                 sample['euler'] = torch.tensor(np.ascontiguousarray(smo_euler_arr[i])).float()
                 sample['trans'] = torch.tensor(np.ascontiguousarray(smo_trans_arr[i])).float()
                 sample['c2w'] = euler_trans_2_c2w(sample['euler'], sample['trans'])
+
         return samples
 
     def headpose_smooth(self, headpose, smooth_sigmas):

@@ -69,3 +69,6 @@ infer_scale_factor: 1.0
 infer_smo_std: 0.
 infer_audio_source_name: ''
 infer_c2w_name: ''
+infer_lm3d_lle_percent: 0. # percent of lle fused feature to compose the processed lm3d
+infer_lm3d_smooth_sigma: 0. # sigma of gaussian kernel to smooth the predicted lm3d
+infer_pose_smooth_sigma: 2.
