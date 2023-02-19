@@ -20,6 +20,7 @@ from modules.nerfs.adnerf.adnerf import ADNeRF as ADNeRF_head
 from modules.nerfs.adnerf.adnerf_torso import ADNeRFTorso as ADNeRF_torso
 from modules.nerfs.commons.volume_rendering import render_dynamic_face
 from modules.nerfs.commons.ray_samplers import TorsoUniformRaySampler
+from scipy.ndimage import gaussian_filter1d, gaussian_filter
 
 
 class Lm3dNeRFTorsoTask(ADNeRFTorsoTask):
@@ -96,7 +97,39 @@ class Lm3dNeRFTorsoTask(ADNeRFTorsoTask):
                     c2w_t=c2w_t, c2w_t0=c2w_t0,t=torch.tensor([0.,]).cuda(),
                     euler=euler, euler_t0=euler_t0, trans=trans, trans_t0=trans_t0
                     )
-                rgb_com = rgb_pred * last_weight_torso.unsqueeze(-1) + rgb_map_fg_torso
+
+                if hparams.get("infer_with_more_dynamic_c2w_sequence", True) is True:
+                    """
+                    Since the torso nerf is modeled in canoical space (i.e., static pose), 
+                    it cannot model large-range movements of the torso.
+                    When the head is moving extremely down,
+                    the torso nerf sometimes will render results on the face part,
+                    which leads to shallow artifacts on the face part.
+                    To handle this, we set the rgb_map_fg_torso on the face part to zero.
+                    """
+                    w_h = int(last_weight.reshape([-1]).shape[0]**0.5)
+                    smo_last_weight = gaussian_filter((last_weight.reshape([w_h,w_h]).cpu() * 255).int().numpy(), sigma=1.).reshape([-1]) / 255.
+                    has_head_mask = convert_to_tensor(smo_last_weight <= 0.5).to(rgb_map_fg.device).bool() # where head has much confidence
+                    def shrink_has_head_mask(has_head_mask):
+                        w_h = int(has_head_mask.reshape([-1]).shape[0]**0.5)
+                        has_head_mask = has_head_mask.reshape([w_h, w_h])
+                        centered_mask = has_head_mask[1:-1,1:-1]
+                        left_offset_mask = has_head_mask[0:-2,1:-1]
+                        right_offset_mask = has_head_mask[2:,1:-1]
+                        up_offset_mask = has_head_mask[1:-1,0:-2]
+                        down_offset_mask = has_head_mask[1:-1,2:]
+                        mask = torch.bitwise_and(centered_mask, left_offset_mask)
+                        mask = torch.bitwise_and(mask, right_offset_mask)
+                        mask = torch.bitwise_and(mask, up_offset_mask)
+                        mask = torch.bitwise_and(mask, down_offset_mask)
+                        has_head_mask[1:-1,1:-1] = mask
+                        return has_head_mask.reshape([-1,])
+                    for _ in range(4):
+                        has_head_mask = shrink_has_head_mask(has_head_mask)      
+                    disable_torso_mask = has_head_mask   
+                    last_weight_torso[disable_torso_mask] = 1   
+                    rgb_map_fg_torso[last_weight_torso==1] = 0
+                rgb_com = rgb_pred * last_weight_torso.unsqueeze(-1) + rgb_map_fg_torso 
 
                 model_out = {
                     "rgb_map" : rgb_com
