@@ -98,8 +98,9 @@ class Lm3dNeRFTorsoTask(ADNeRFTorsoTask):
                     euler=euler, euler_t0=euler_t0, trans=trans, trans_t0=trans_t0
                     )
 
-                if hparams.get("infer_with_more_dynamic_c2w_sequence", True) is True:
+                if hparams.get("infer_with_more_dynamic_c2w_sequence", False) is True:
                     """
+                    Note: enable it only when you find there is overlap problem between head and torso!
                     Since the torso nerf is modeled in canoical space (i.e., static pose), 
                     it cannot model large-range movements of the torso.
                     When the head is moving extremely down,
