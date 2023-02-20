@@ -18,6 +18,8 @@ class NeRFDataset(torch.utils.data.Dataset):
             self.samples = [convert_to_tensor(sample) for sample in ds_dict['train_samples']]
         elif prefix == 'val':
             self.samples = [convert_to_tensor(sample) for sample in ds_dict['val_samples']]
+        elif prefix == 'trainval':
+            self.samples = [convert_to_tensor(sample) for sample in ds_dict['train_samples']] + [convert_to_tensor(sample) for sample in ds_dict['val_samples']]
         else:
             raise ValueError("prefix should in train/val !")
         self.prefix = prefix
