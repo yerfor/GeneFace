@@ -7,6 +7,8 @@ from torch.utils.data import Dataset, DataLoader
 import tqdm
 
 from utils.commons.hparams import hparams
+from utils.commons.tensor_utils import convert_to_tensor
+from data_util.face3d_helper import Face3DHelper
 
 from tasks.audio2motion.dataset_utils.indexed_db import IndexedDataset
 from tasks.audio2motion.dataset_utils.euler2quaterion import euler2quaterion, quaterion2euler
@@ -18,7 +20,7 @@ class LRS3SeqDataset(Dataset):
         self.ds = IndexedDataset(os.path.join(self.ds_path, self.db_key))
         self.sizes = None
         self.memory_cache = {} # we use hash table to accelerate indexing
-
+        self.face3d_helper = Face3DHelper('data_util/BFM_models')
         self.x_multiply = 8
 
         self.load_db_to_memory()
@@ -162,10 +164,11 @@ class LRS3SeqDataset(Dataset):
             # audio-related features
             mel = raw_item['mel']
             hubert = raw_item['hubert']
-            # energy = raw_item['energy']
             item['mel'] = torch.from_numpy(mel).float() # [T_x, c=80]
             item['hubert'] = torch.from_numpy(hubert).float() # [T_x, c=80]
-            # item['energy'] = torch.from_numpy(energy).float() # [T_x, c=1]
+            if 'f0' in raw_item.keys():
+                f0 = raw_item['f0']
+                item['f0'] = torch.from_numpy(f0).float() # [T_x,]
             # video-related features
             coeff = raw_item['coeff'] # [T_y ~= T_x//2, c=257]
             exp = coeff[:, 80:144] 
@@ -175,20 +178,15 @@ class LRS3SeqDataset(Dataset):
             pose = np.concatenate([translation, angles], axis=1)
             item['pose'] = torch.from_numpy(pose).float() # [T_y, c=4+3]
 
-            # Load eye blinks and brow raises from OpenFace
-            # item['au02_r'] = torch.from_numpy(raw_item['au02_r']).float().unsqueeze(-1) # [T_x, c=1]
-            item['au45_r'] = torch.from_numpy(raw_item['au45_r']).float().unsqueeze(-1) # [T_x, c=1]
-
             # Load identity for landmark construction
             item['identity'] = torch.from_numpy(raw_item['coeff'][..., :80]).float()
             
             # Load lm3d
-            t_lm, dim_lm, _ = raw_item['lm3d'].shape # [T, 68, 3]
-            item['lm3d'] = torch.from_numpy(raw_item['lm3d']).reshape(t_lm, -1).float()
-            item['mouth_lm3d'] = torch.from_numpy(raw_item['mouth_lm3d']).reshape(t_lm, -1).float()
+            t_lm, dim_lm, _ = raw_item['idexp_lm3d'].shape # [T, 68, 3]
             item['idexp_lm3d'] = torch.from_numpy(raw_item['idexp_lm3d']).reshape(t_lm, -1).float()
-            item['eye_idexp_lm3d'] = torch.from_numpy(raw_item['eye_idexp_lm3d']).reshape(t_lm, -1).float()
-            item['mouth_idexp_lm3d'] = torch.from_numpy(raw_item['mouth_idexp_lm3d']).reshape(t_lm, -1).float()
+            eye_idexp_lm3d, mouth_idexp_lm3d = self.face3d_helper.get_eye_mouth_lm_from_lm3d(raw_item['idexp_lm3d'])
+            item['eye_idexp_lm3d'] = convert_to_tensor(eye_idexp_lm3d).reshape(t_lm, -1).float()
+            item['mouth_idexp_lm3d'] = convert_to_tensor(mouth_idexp_lm3d).reshape(t_lm, -1).float()
             
             self.memory_cache[idx] = item
 
@@ -273,10 +271,6 @@ class LRS3SeqDataset(Dataset):
             sty = self._cal_avatar_style_encoding(item['exp'], item['pose'])
             item['style'] = sty.float()
 
-            # item['idexp_lm3d_normalized'] = (item['idexp_lm3d'] - self.idexp_lm3d_mean) / self.idexp_lm3d_std
-            # item['mouth_idexp_lm3d_normalized'] = (item['mouth_idexp_lm3d'] - self.mouth_idexp_lm3d_mean) / self.mouth_idexp_lm3d_std
-
-
     @staticmethod
     def _collate_2d(values, max_len=None, pad_value=0):
         """
@@ -309,22 +303,12 @@ class LRS3SeqDataset(Dataset):
         y_len = x_len // 2
         mel_batch = self._collate_2d([s["mel"] for s in samples], max_len=x_len, pad_value=0) # [b, t_max_y, 64]
         hubert_batch = self._collate_2d([s["hubert"] for s in samples], max_len=x_len, pad_value=0) # [b, t_max_y, 64]
-        # audio_batch = self._collate_2d([s["audio"] for s in samples], max_len=x_len, pad_value=0) # [b, t_max_y, 29]
-        # energy_batch = self._collate_2d([s["energy"] for s in samples], max_len=x_len, pad_value=0) # [b, t_max_y, 1]
         exp_batch = self._collate_2d([s["exp"] for s in samples], max_len=y_len, pad_value=0) # [b, t_max_y, 64]
         pose_batch = self._collate_2d([s["pose"] for s in samples], max_len=y_len, pad_value=0) # [b, t_max_y, 64]
         
-        # lm3d = self._collate_2d([s["lm3d"] for s in samples], max_len=y_len, pad_value=0) # [b, t_max, 1]
-        # mouth_lm3d = self._collate_2d([s["mouth_lm3d"] for s in samples], max_len=y_len, pad_value=0) # [b, t_max, 1]
         idexp_lm3d = self._collate_2d([s["idexp_lm3d"] for s in samples], max_len=y_len, pad_value=0) # [b, t_max, 1]
         ref_mean_lm3d = torch.stack([s['ref_mean_lm3d'] for s in samples], dim=0) # [b, h=204*5]
-        # idexp_lm3d_normalized = self._collate_2d([s["idexp_lm3d_normalized"] for s in samples], max_len=y_len, pad_value=0) # [b, t_max, 1]
-        # eye_idexp_lm3d = self._collate_2d([s["eye_idexp_lm3d"] for s in samples], max_len=y_len, pad_value=0) # [b, t_max, 1]
         mouth_idexp_lm3d = self._collate_2d([s["mouth_idexp_lm3d"] for s in samples], max_len=y_len, pad_value=0) # [b, t_max, 1]
-        # mouth_idexp_lm3d_normalized = self._collate_2d([s["mouth_idexp_lm3d_normalized"] for s in samples], max_len=y_len, pad_value=0) # [b, t_max, 1]
-
-        # au02_r = self._collate_2d([s["au02_r"] for s in samples], max_len=y_len, pad_value=0) # [b, t_max, 1]
-        au45_r = self._collate_2d([s["au45_r"] for s in samples], max_len=y_len, pad_value=0) # [b, t_max, 1]
 
         x_mask = (mel_batch.abs().sum(dim=-1) > 0).float() # [b, t_max_x]
         y_mask = (pose_batch.abs().sum(dim=-1) > 0).float() # [b, t_max_y]
@@ -334,20 +318,18 @@ class LRS3SeqDataset(Dataset):
             'style': style_batch,
             'mel': mel_batch,
             'hubert': hubert_batch,
-            # 'audio': audio_batch,
-            # 'energy': energy_batch,
             'x_mask': x_mask,
             'exp': exp_batch,
             'pose': pose_batch,
             'y_mask': y_mask,
             'idexp_lm3d': idexp_lm3d,
             'ref_mean_lm3d': ref_mean_lm3d,
-            # 'idexp_lm3d_normalized': idexp_lm3d_normalized,
             'mouth_idexp_lm3d': mouth_idexp_lm3d,
-            # 'mouth_idexp_lm3d_normalized': mouth_idexp_lm3d_normalized,
-            # 'au02_r': au02_r,
-            'au45_r': au45_r,
         })
+
+        if 'f0' in samples[0].keys():
+            f0_batch = self._collate_2d([s["f0"].reshape([-1,1]) for s in samples], max_len=x_len, pad_value=0).squeeze(-1) # [b, t_max_y]
+            batch['f0'] = f0_batch
         return batch
 
     def get_dataloader(self):
@@ -359,6 +341,8 @@ class LRS3SeqDataset(Dataset):
 
 
 if __name__ == '__main__':
+    from utils.commons.hparams import set_hparams
+    set_hparams()
     ds = LRS3SeqDataset('train')
     loader = ds.get_dataloader()
     pbar = tqdm.tqdm(total=len(ds.batch_by_size(ds.ordered_indices())))

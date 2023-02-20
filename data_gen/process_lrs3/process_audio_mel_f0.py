@@ -4,14 +4,9 @@ import glob
 import os
 import tqdm
 import librosa
-
-import deep_3drecon
-import face_alignment
-fa = face_alignment.FaceAlignment(face_alignment.LandmarksType._2D, network_size=4, device='cuda')
-face_reconstructor = deep_3drecon.Reconstructor()
-fa.get_landmarks(np.ones([224,224,3],dtype=np.uint8)) # 识别图片中的人脸，获得角点, shape=[68,2]
-del fa
-torch.cuda.empty_cache()
+import parselmouth
+from utils.commons.pitch_utils import f0_to_coarse
+from utils.commons.multiprocess_utils import multiprocess_run_tqdm
 
 
 def librosa_pad_lr(x, fsize, fshift, pad_sides=1):
@@ -25,7 +20,7 @@ def librosa_pad_lr(x, fsize, fshift, pad_sides=1):
     else:
         return pad // 2, pad // 2 + pad % 2
 
-def get_wav_features_from_fname(wav_path,
+def extract_mel_from_fname(wav_path,
                       fft_size=512,
                       hop_size=320,
                       win_length=512,
@@ -54,33 +49,43 @@ def get_wav_features_from_fname(wav_path,
 
     mel = np.log10(np.maximum(eps, mel))  # (n_mel_bins, T)
     mel = mel.T
-    # f0 = get_pitch(wav, mel)
 
     l_pad, r_pad = librosa_pad_lr(wav, fft_size, hop_size, 1)
     wav = np.pad(wav, (l_pad, r_pad), mode='constant', constant_values=0.0)
 
-    wav = wav[:mel.shape[1] * hop_size]
     return wav.T, mel
 
-def process_audio(fname, out_name=None):
+def extract_f0_from_wav_and_mel(wav, mel,
+                        hop_size=320,
+                        audio_sample_rate=16000,
+                        ):
+    time_step = hop_size / audio_sample_rate * 1000
+    f0_min = 80
+    f0_max = 750
+    f0 = parselmouth.Sound(wav, audio_sample_rate).to_pitch_ac(
+        time_step=time_step / 1000, voicing_threshold=0.6,
+        pitch_floor=f0_min, pitch_ceiling=f0_max).selected_array['frequency']
+
+    delta_l = len(mel) - len(f0)
+    assert np.abs(delta_l) <= 8
+    if delta_l > 0:
+        f0 = np.concatenate([f0, [f0[-1]] * delta_l], 0)
+    f0 = f0[:len(mel)]
+    pitch_coarse = f0_to_coarse(f0)
+    return f0, pitch_coarse
+
+def extract_mel_f0_from_fname(fname, out_name=None):
     assert fname.endswith(".wav")
-    tmp_name = fname[:-4] + '.doi'
-    if os.path.exists(tmp_name):
-        print("tmp exist, skip")
-        return
     if out_name is None:
         out_name = fname[:-4] + '_audio.npy'
-    if os.path.exists(out_name):
-        print("out exisit, skip")
-        return False
-    os.system(f"touch {tmp_name}")
 
-    wav, mel = get_wav_features_from_fname(fname)
+    wav, mel = extract_mel_from_fname(fname)
+    f0, f0_coarse = extract_f0_from_wav_and_mel(wav, mel)
     out_dict = {
         "mel": mel, # [T, 80]
+        "f0": f0,
     }
     np.save(out_name, out_dict)
-    os.system(f"rm {tmp_name}")
     return True
 
 if __name__ == '__main__':
@@ -89,18 +94,5 @@ if __name__ == '__main__':
     wav_name_pattern = os.path.join(lrs3_dir, "*/*.wav")
     wav_names = glob.glob(wav_name_pattern)
     wav_names = sorted(wav_names)
-    # you can run multiple processes in different GPUS to accelerate the deepspeech extraction. 
-    # import random
-    # random.shuffle(wav_names)
-    # for wav_name in tqdm.tqdm(wav_names, desc='extracting Mel and Deepspeech'):
-    #     doi_name = wav_name[:-4]+ '.doi'
-    #     if os.path.exists(doi_name):
-    #         os.remove(doi_name)
-    #     doi_name = wav_name[:-4]+ '_audio.npy'
-    #     if os.path.exists(doi_name):
-    #         os.remove(doi_name)
-    #     doi_name = wav_name[:-4]+ '_deepspeech.npy'
-    #     if os.path.exists(doi_name):
-    #         os.remove(doi_name)
-    for wav_name in tqdm.tqdm(wav_names, desc='extracting Mel and Deepspeech'):
-        process_audio(wav_name)
+    for _ in multiprocess_run_tqdm(extract_mel_f0_from_fname, args=wav_names, num_workers=32,desc='extracting Mel and f0'):
+        pass

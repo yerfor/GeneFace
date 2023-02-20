@@ -17,7 +17,7 @@ CUDA_VISIBLE_DEVICES=0 data_gen/nerf/process_data.sh $VIDEO_ID
 
 ```
 
-## Step2. extract hubert/3dmm from the video
+## Step2. extract hubert/mel/f0/3dmm from the video
 
 These features are required to train the postnet.
 
@@ -28,7 +28,7 @@ conda activate process_lrs3
 export PYTHONPATH=./
 export VIDEO_ID=May
 CUDA_VISIBLE_DEVICES=0 python data_gen/nerf/extract_3dmm.py --video_id=$VIDEO_ID
-CUDA_VISIBLE_DEVICES=0 python data_gen/nerf/extract_hubert.py --video_id=$VIDEO_ID
+CUDA_VISIBLE_DEVICES=0 python data_gen/nerf/extract_hubert_mel_f0.py --video_id=$VIDEO_ID
 ```
 
 ## Step3. binarize the dataset

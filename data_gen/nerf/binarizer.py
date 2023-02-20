@@ -72,6 +72,7 @@ def load_data(processed_dir):
     config_txt_name = os.path.join(processed_dir, "HeadNeRF_config.txt")
     coeff_npy_name = os.path.join(processed_dir, "coeff.npy")
     hubert_npy_name = os.path.join(processed_dir, "hubert.npy")
+    mel_f0_npy_name = os.path.join(processed_dir, "mel_f0.npy")
     
     ret_dict = {}
 
@@ -80,6 +81,10 @@ def load_data(processed_dir):
     print("loading hubert ...")
     hubert_features = np.load(hubert_npy_name)
     ret_dict['hubert'] = hubert_features
+    print("loading Mel and F0 ...")
+    mel_f0_features = np.load(mel_f0_npy_name, allow_pickle=True).tolist()
+    ret_dict['mel'] = mel_f0_features['mel']
+    ret_dict['f0'] = mel_f0_features['f0']
 
     print("loading 3dmm coeff ...")
     coeff_dict = np.load(coeff_npy_name, allow_pickle=True).tolist()
@@ -341,11 +346,9 @@ class Binarizer:
         out_fname = os.path.join(binary_dir, "trainval_dataset.npy")
         os.makedirs(binary_dir, exist_ok=True)
         ret = load_data(processed_dir)
-        # ret = load_adnerf_data(processed_dir)
-        mel_name = os.path.join(processed_dir, 'mel.npy')
-        mel = np.load(mel_name, allow_pickle=True)
-        ret['mel'] = mel
-        # ret.update(mel_dict)
+        mel_name = os.path.join(processed_dir, 'mel_f0.npy')
+        mel_f0_dict = np.load(mel_name, allow_pickle=True).tolist()
+        ret.update(mel_f0_dict)
         np.save(out_fname, ret, allow_pickle=True)
 
 

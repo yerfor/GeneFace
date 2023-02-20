@@ -63,7 +63,7 @@ def load_video_npy(fn):
     ret_dict = np.load(fn,allow_pickle=True).item()
     video_dict = {
         'coeff': ret_dict['coeff'], # [T, h]
-        'lm68': ret_dict['lm68'], # [T, 68, 2]
+        'lm68': ret_dict['lm68'], # [T, 68, 2]  
         'lm5': ret_dict['lm5'], # [T, 5, 2]
     }
     return video_dict
@@ -80,7 +80,7 @@ def load_audio_npy(fn):
     ret_dict = np.load(fn,allow_pickle=True).item()
     audio_dict = {
         "mel": ret_dict['mel'], # [T, 80]
-        "energy": ret_dict['energy'], # [T,1]
+        "f0": ret_dict['f0'], # [T,1]
     }
     return audio_dict
 
@@ -124,7 +124,7 @@ if __name__ == '__main__':
             video_dict = load_video_npy(video_npy_name)
             cal_lm3d_in_video_dict(video_dict, face3d_helper)
             mel = audio_dict['mel']
-            if mel.shape[0] < 64:
+            if mel.shape[0] < 64: # the video is shorter than 0.6s
                 print(f"Skip item for too short.")
                 continue
             audio_dict.update(video_dict)

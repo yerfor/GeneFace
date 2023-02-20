@@ -21,3 +21,4 @@ vector_quantize_pytorch==0.4.10
 pyyaml
 face_alignment==1.2.0
 transformers==4.26.0
+praat-parselmouth==0.3.3

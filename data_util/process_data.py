@@ -277,10 +277,3 @@ if running_step == 7:
         file.write('test_pose_file = transforms_val.json' + '\n')
 
     print(id + ' data processed done!')
-
-if running_step == 8:
-    wav_name = os.path.join(id_dir, "aud.wav")
-    mel_npy_name = os.path.join(id_dir, "mel.npy")
-    cmd = f"python data_util/extract_mel.py --wav_name={wav_name} --mel_npy_name={mel_npy_name}"
-    os.system(cmd)
-    print(f"I have extract mel from {wav_name} to {mel_npy_name}")

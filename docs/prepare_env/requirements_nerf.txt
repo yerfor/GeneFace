@@ -14,3 +14,4 @@ tensorboardX
 ffmpeg-python
 librosa
 transformers
+praat-parselmouth==0.3.3
