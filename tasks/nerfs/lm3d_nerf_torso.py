@@ -109,7 +109,7 @@ class Lm3dNeRFTorsoTask(ADNeRFTorsoTask):
                     """
                     w_h = int(last_weight.reshape([-1]).shape[0]**0.5)
                     smo_last_weight = gaussian_filter((last_weight.reshape([w_h,w_h]).cpu() * 255).int().numpy(), sigma=1.).reshape([-1]) / 255.
-                    has_head_mask = convert_to_tensor(smo_last_weight <= 0.5).to(rgb_map_fg.device).bool() # where head has much confidence
+                    has_head_mask = convert_to_tensor(smo_last_weight <= 0.3).to(rgb_map_fg.device).bool() # where head has much confidence
                     def shrink_has_head_mask(has_head_mask):
                         w_h = int(has_head_mask.reshape([-1]).shape[0]**0.5)
                         has_head_mask = has_head_mask.reshape([w_h, w_h])
@@ -124,7 +124,7 @@ class Lm3dNeRFTorsoTask(ADNeRFTorsoTask):
                         mask = torch.bitwise_and(mask, down_offset_mask)
                         has_head_mask[1:-1,1:-1] = mask
                         return has_head_mask.reshape([-1,])
-                    for _ in range(4):
+                    for _ in range(6):
                         has_head_mask = shrink_has_head_mask(has_head_mask)      
                     disable_torso_mask = has_head_mask   
                     last_weight_torso[disable_torso_mask] = 1   

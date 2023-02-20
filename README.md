@@ -14,6 +14,9 @@ This repository is the official PyTorch implementation of our [ICLR-2023 paper](
 
 Our GeneFace achieves better lip synchronization and expressiveness to out-of-domain audios. Watch [this video](https://geneface.github.io/GeneFace/example_show_improvement.mp4) for a clear lip-sync comparison against previous NeRF-based methods. You can also visit our [project page](https://geneface.github.io/) for more details.
 
+## 🔥Update:
+- We release a stable 3D landmark post-processing strategy in `inference/ners/lm3d_nerf_infer.py`, which improve the stability and quality of the final results by a large margin.
+
 ## Quick Start!
 
 We provide pre-trained models and processed datasets of GeneFace in [this release](https://github.com/yerfor/GeneFace/releases/tag/v1.0.0) to enable a quick start. In the following, we show how to infer the pre-trained models in 4 steps. If you want to train GeneFace on your own target person video, please reach to the following sections (`Prepare Environments`, `Prepare Datasets`, and `Train Models`).
