@@ -8,6 +8,7 @@ import math
 from scipy.ndimage import gaussian_filter1d
 
 from inference.nerfs.base_nerf_infer import BaseNeRFInfer
+from data_util.extract_mel import get_mel_from_fname
 from utils.commons.ckpt_utils import load_ckpt
 from utils.commons.hparams import hparams, set_hparams
 from utils.commons.tensor_utils import move_to_cuda, convert_to_tensor, convert_to_np
@@ -77,7 +78,50 @@ class LM3dNeRFInfer(BaseNeRFInfer):
         lm3d_smooth_sigma = hparams['infer_lm3d_smooth_sigma']
         if lm3d_smooth_sigma > 0:
             idexp_lm3d_normalized[:, :48*3] = convert_to_tensor(gaussian_filter1d(idexp_lm3d_normalized[:, :48*3].numpy(), sigma=lm3d_smooth_sigma))
+            # idexp_lm3d_normalized = convert_to_tensor(gaussian_filter1d(idexp_lm3d_normalized.numpy(), sigma=lm3d_smooth_sigma))
         
+        # step4. inject eye blink
+        inject_eye_blink_mode = hparams.get("infer_inject_eye_blink_mode", "gt")
+        print(f"The eye blink mode is: {inject_eye_blink_mode}")
+        if inject_eye_blink_mode == 'none':
+            pass
+        elif inject_eye_blink_mode == 'period':
+            # get a eye blink period (~40 frames) from the gt data
+            # then repeat it to the whole sequence length
+            blink_ref_frames_start_idx = hparams["infer_eye_blink_ref_frames_start_idx"] # the index of start frame of a blink period,
+            blink_ref_frames_end_idx = hparams["infer_eye_blink_ref_frames_end_idx"] # the index of end frame of a blink period,
+            assert blink_ref_frames_start_idx != '' or blink_ref_frames_end_idx != '', "If you want to use `period` eye blink mode, please find a eye blink period in your GT frames, then set `infer_eye_blink_pattern_start_idx` in your config file"
+            idexp_lm3d_normalized_database = torch.stack([s['idexp_lm3d_normalized'] for s in self.dataset.samples]).reshape([-1, 68*3])
+            blink_eye_pattern = idexp_lm3d_normalized_database[blink_ref_frames_start_idx:blink_ref_frames_end_idx+1, 17*3:48*3].clone()
+            repeated_blink_eye_pattern = blink_eye_pattern.repeat([len(idexp_lm3d_normalized)//len(blink_eye_pattern)+1,1])[:len(idexp_lm3d_normalized)]
+            idexp_lm3d_normalized[:, 17*3:48*3] = repeated_blink_eye_pattern
+        elif inject_eye_blink_mode == 'gt':
+            # use the eye blink sequence from the gt data
+            idexp_lm3d_normalized_database = torch.stack([s['idexp_lm3d_normalized'] for s in self.dataset.samples]).reshape([-1, 68*3])
+            blink_eye_pattern = idexp_lm3d_normalized_database[:, 17*3:48*3].clone()
+            repeated_blink_eye_pattern = blink_eye_pattern.repeat([len(idexp_lm3d_normalized)//len(blink_eye_pattern)+1,1])[:len(idexp_lm3d_normalized)]
+            idexp_lm3d_normalized[:, 17*3:48*3] = repeated_blink_eye_pattern
+        else:
+            raise NotImplementedError()
+
+        # step5. close the mouth in silent frames
+        if hparams['infer_close_mouth_when_sil']:
+            idexp_lm3d_normalized = idexp_lm3d_normalized.reshape([-1, 68*3])
+            mel, energy = get_mel_from_fname(self.wav16k_name, return_energy=True)
+            energy = energy.reshape([-1])
+            if len(energy) < 2*len(idexp_lm3d_normalized):
+                energy = np.concatenate([energy] + [energy[-1:]]*(2*len(idexp_lm3d_normalized)-len(energy)))
+            energy = energy[:2*len(idexp_lm3d_normalized)]
+            energy = energy.reshape([-1,2]).max(axis=1) # downsample with max_pool
+            is_sil_mask = energy < 1e-5
+            sil_index = np.where(is_sil_mask)[0]
+            sil_ref_frame_idx = hparams['infer_sil_ref_frame_idx']
+            assert sil_ref_frame_idx != '', "Please set `infer_sil_ref_frame_idx` to the index of a frame with closed mouth in the GT dataset"
+            idexp_lm3d_normalized_database = torch.stack([s['idexp_lm3d_normalized'] for s in self.dataset.samples]).reshape([-1, 68*3])
+            sil_mouth_pattern = idexp_lm3d_normalized_database[sil_ref_frame_idx, 48*3:68*3].clone()
+            repeated_sil_mouth_pattern = sil_mouth_pattern.unsqueeze(0).repeat([len(sil_index),1])
+            idexp_lm3d_normalized[sil_index, 48*3:68*3] = repeated_sil_mouth_pattern
+
         idexp_lm3d_normalized_numpy = idexp_lm3d_normalized.cpu().numpy()
         idexp_lm3d_normalized_win_numpy = np.stack([get_win_conds(idexp_lm3d_normalized_numpy, i, smo_win_size=hparams['cond_win_size'], pad_option='edge') for i in range(idexp_lm3d_normalized_numpy.shape[0])])
         idexp_lm3d_normalized_win = torch.from_numpy(idexp_lm3d_normalized_win_numpy)

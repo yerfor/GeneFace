@@ -1,0 +1,3 @@
+infer_eye_blink_ref_frames_start_idx: 0 # start index of the ref blink sequence in the GT dataset
+infer_eye_blink_ref_frames_end_idx: 60  # end index of the ref blink sequence in the GT dataset
+infer_sil_ref_frame_idx: 6072 # index of the ref frame with a closed mouth in the GT dataset

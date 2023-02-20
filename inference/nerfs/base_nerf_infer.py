@@ -30,7 +30,7 @@ class BaseNeRFInfer:
         self.infer_max_length = hparams.get('infer_max_length', 500000) # default render 10 seconds long
         self.device = device
         self.dataset_cls = NeRFDataset # the dataset only provides head pose 
-        self.dataset = self.dataset_cls('train')
+        self.dataset = self.dataset_cls('trainval')
 
         assert hparams['task_cls'] != ''
         pkg = ".".join(hparams["task_cls"].split(".")[:-1])
@@ -179,15 +179,16 @@ class BaseNeRFInfer:
         process the item into torch.tensor batch
         """
         if self.use_pred_pose:
-            print(f"loaded head pose from {self.inp['c2w_name']}.")
+            print(f"The head pose mode is: pred")
             c2w_arr = np.load(self.inp['c2w_name'])[0] # [T, 3, 3]
+            print(f"Loaded head pose from {self.inp['c2w_name']}.")
             assert len(samples) - len(c2w_arr) < 5
             if len(samples) > len(c2w_arr):
                 samples = samples[:len(c2w_arr)]
             if len(samples) < len(c2w_arr):
                 c2w_arr = c2w_arr[:len(samples)]
         else:
-            print("use head pose from GT frames.")
+            print(f"The head pose mode is: gt")
             
         for idx, sample in enumerate(samples):
             if idx >= len(self.dataset.samples) and not self.use_pred_pose:

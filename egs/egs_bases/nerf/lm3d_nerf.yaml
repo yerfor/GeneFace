@@ -9,3 +9,10 @@ use_window_cond: true # the NeRF only takes the exp at current frame as conditio
 with_att: true # only available when use win_cond, use a attention Net in AD-NeRF 
 cond_win_size: 1
 smo_win_size: 5
+
+infer_inject_eye_blink_mode: gt # none|gt|period. `gt` uses the eye blink sequence from GT dataset, `period` use a ref blink sequence from GT dataset and repeat it to the final length
+infer_eye_blink_ref_frames_start_idx: '' # start index of the ref blink sequence in the GT dataset
+infer_eye_blink_ref_frames_end_idx: ''  # end index of the ref blink sequence in the GT dataset
+
+infer_close_mouth_when_sil: True # detect sil frames, then set the mouth to close in these frames
+infer_sil_ref_frame_idx: '' # index of the ref frame with a closed mouth in the GT dataset
