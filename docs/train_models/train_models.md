@@ -83,6 +83,7 @@ NOTE: We provide the pre-trained NeRF model for the target person video named `d
 
 If you want to train a NeRF model from scratch, please run the following commandlines (The processed target person video dataset is required):
 
+Note: As pointed out in [this issue](https://github.com/yerfor/GeneFace/issues/18), since NeRF requires good initilization, you may need to run the commandline several times, until the loss converges normally.
 ```
 conda activate geneface
 export PYTHONPATH=./

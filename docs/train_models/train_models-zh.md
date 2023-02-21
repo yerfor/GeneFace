@@ -81,6 +81,7 @@ python utils/visualization/lm_visualizer.py # visualize the 3D landmark sequence
 
 如果你想要从头训练NeRF模型，请执行以下命令行（你需要首先准备好LRS3数据集和对应的说话人视频数据集）：
 
+注意：如[这个issue](https://github.com/yerfor/GeneFace/issues/18)里面指出的，由于NeRF非常依赖于初始化参数，你可能需要重复执行几次训练命令，直到NeRF的loss得以正常下降。
 ```
 conda activate geneface
 export PYTHONPATH=./
