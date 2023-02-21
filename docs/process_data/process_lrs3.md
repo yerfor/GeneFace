@@ -4,11 +4,13 @@
 
 We use LRS3 dataset to learn a robust audio2motion generator. It is also required for training a post-net and syncnet.
 
-🔥 Update: Since LRS3 is quite big (500 hours+), it is expensive to process this dataset (e.g., four RTX2080ti GPUs for a week). For your convenience, we provide the binarized LRS3 dataset file (about 35 GB) on Baidu Drive. 
-- Download at [this link](https://pan.baidu.com/s/1fLu7c0lYv3FhGLH6YJsZbw?pwd=lrs3) with the password `lrs3`. 
+## Processed LRS3 Dataset available
+🔥 Update: Since LRS3 is quite big (500 hours+), it is expensive to process this dataset (e.g., four RTX2080ti GPUs for a week). For your convenience, we provide the binarized LRS3 dataset file (about 25 GB) on Google Drive. If you use the processed dataset, you can skip `step 1-3` below and go directly to `step 4` to verify the installation.
+- Download link: [Partition 1](https://drive.google.com/file/d/1ScyB4DeKNCcyMNvVx6Gz39tOmN3h4Gsk/view?usp=share_link), [Partition 2](https://drive.google.com/file/d/1treFjXaWgYom3dcj8p_NyNvWktE25wTK/view?usp=share_link). 
 - How to use: 
-    - step1. Integrate the segments `cat lrs3_0722.zip.part_* > lrs3_0722.zip` .
-    - step2. Unzip `lrs3_0722.zip` and place it into the `data/binary/lrs3` folder.
+    - step1. Integrate the segments `cat processed_lrs3_.zip.part_* > processed_lrs3.zip` .
+    - step2. Unzip `processed_lrs3.zip` and place it into the `data/binary/lrs3` folder.
+    - step3. Move to `Step4. Verification` to verify installation.
 - Disclaimer: the provided binarized dataset file only contains data-masked features (such as HuBERT for audio representations), so it does not viloate the copyright of LRS3.
 
 If you ue our processed lrs3 dataset, you can skip the first 3 steps, and directly go to `step4`
