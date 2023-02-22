@@ -12,6 +12,11 @@
 
 我们的GeneFace对域外音频（如不同说话人、不同语种的音频）实现了更好的嘴唇同步和表现力。推荐您观看[此视频](https://geneface.github.io/GeneFace/example_show_improvement.mp4)，以了解GeneFace与之前基于NeRF的虚拟人合成方法的口型同步能力对比。您也可以访问我们的[项目页面](https://geneface.github.io/)以了解更多详细信息。
 
+
+## 🔥新闻:
+- `2023.2.22` 我们发布了一段一分钟的[Demo视频](https://geneface.github.io/GeneFace/how_i_want_to_say_goodbye.mp4)，在其中GeneFace由[DiffSinger](https://github.com/MoonInTheRiver/DiffSinger)生成的一段中文歌曲所驱动，并能够产生准确的嘴形。
+- `2023.2.20` 我们发布了一个稳定版本的3D landmark后处理逻辑，位于 `inference/ners/lm3d_nerf_infer.py`，它大大提升了最终合成的视频的稳定性和质量。
+
 ## Quick Started!
 
 在[这个release](https://github.com/yerfor/GeneFace/releases/tag/v1.0.0)中，我们提供了预训练的GeneFace模型和处理好的数据集，以便您能快速上手。在本小节的剩余部分我们将介绍如何分4个步骤运行这些模型。如果您想在您自己的目标人物视频上训练GeneFace，请遵循 `docs/prepare_env`、`docs/process_data` 、`docs/train_models` 中的步骤。
