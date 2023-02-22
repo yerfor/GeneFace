@@ -26,7 +26,7 @@ pip install -r docs/prepare_env/requirements_nerf.txt
 
 ```
 cd data_util/face_tracking
-conda activate 
+conda activate geneface
 python convert_BFM.py
 ```
 

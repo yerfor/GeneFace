@@ -27,7 +27,7 @@ Then run the following commandlines:
 
 ```
 cd data_util/face_tracking
-conda activate 
+conda activate geneface
 python convert_BFM.py
 ```
 
