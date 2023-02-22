@@ -21,7 +21,7 @@ Our GeneFace achieves better lip synchronization and expressiveness to out-of-do
 
 We provide pre-trained models and processed datasets of GeneFace in [this release](https://github.com/yerfor/GeneFace/releases/tag/v1.0.0) to enable a quick start. In the following, we show how to infer the pre-trained models in 4 steps. If you want to train GeneFace on your own target person video, please reach to the following sections (`Prepare Environments`, `Prepare Datasets`, and `Train Models`).
 
-- Step1. Create a new python env named `geneface` following the guide in `docs/prepare_env/install_guide_nerf.md`.
+- Step1. Create a new python env named `geneface` following the guide in `docs/prepare_env/install_guide_nerf.md`. Download `BFM_model_front.mat` at [this link](https://drive.google.com/drive/folders/1YCxXKJFfo1w01PzayhnxWSZZK5k7spSH?usp=share_link) and place it into `./deep_3drecon/BFM` and `./deep_util/BFM_models` directory.
 
 - Step2. Download the `lrs3.zip` and `May.zip` in [the release](https://github.com/yerfor/GeneFace/releases/tag/v1.0.0) and unzip it into the `checkpoints` directory.
 
