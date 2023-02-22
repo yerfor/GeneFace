@@ -26,13 +26,14 @@
 
 # 2. 安装python库
 
-注意：请确保tensorflow-gpu已与CUDA成功安装。
 
 ```
 conda create -n process_lrs3 python=3.7.11
 conda activate process_lrs3
-conda install tensorflow-gpu=1.14.0 cudatoolkit=10.1
-conda install pytorch=1.7.1 torchvision -c pytorch
+conda install -c pytorch pytorch=1.7.1 torchvision cudatoolkit=10.1 # RTX2080 
+# conda install -c pytorch pytorch=1.11.0 torchvision cudatoolkit=11.3 # RTX3090 
+conda install tensorflow-gpu=1.14.0 # RTX2080 supports TF114 gpu version
+# conda install tensorflow=1.14.0 # RTX3090 only supports TF114 cpu version
 pip install -r docs/prepare_env/requirements_lrs3.txt
 ```
 
