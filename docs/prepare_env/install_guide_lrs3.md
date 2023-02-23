@@ -6,9 +6,9 @@ The following installation process is verified in RTX2080, Ubuntu 16.04. It may 
 
 # 1. Download 3D morphable face models
 
-## 1.1  BFM09 Model
+## 1.1  BFM-2009 Model
 
-Apply in [this link](https://faces.dmi.unibas.ch/bfm/).
+Apply in [this link](https://faces.dmi.unibas.ch/bfm/index.php?nav=1-2&id=downloads).
 
 You can get a `BaselFaceModel.tgz`, unzip it, unzip it and get `01_MorphableModel.mat` and save it to the `./deep_3drecon/BFM` folder
 

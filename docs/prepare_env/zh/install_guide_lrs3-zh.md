@@ -4,9 +4,9 @@
 
 # 1. 下载3D人脸模型
 
-## 1.1  BFM09 Model
+## 1.1  BFM-2009 Model
 
-到这个网站去申请：[链接](https://faces.dmi.unibas.ch/bfm/)
+到这个网站去申请：[链接](https://faces.dmi.unibas.ch/bfm/index.php?nav=1-2&id=downloads)
 
 你能得到一个 `BaselFaceModel.tgz`，将其解压，解压后获得其中 `01_MorphableModel.mat`保存到 `./deep_3drecon/BFM`文件夹
 
