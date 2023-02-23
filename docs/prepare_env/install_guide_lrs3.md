@@ -48,7 +48,6 @@ sudo apt install curl gnupg
 curl -fsSL https://bazel.build/bazel-release.pub.gpg | gpg --dearmor > bazel.gpg
 sudo mv bazel.gpg /etc/apt/trusted.gpg.d/
 echo "deb [arch=amd64] https://storage.googleapis.com/bazel-apt stable jdk1.8" | sudo tee /etc/apt/sources.list.d/bazel.list
-sudo apt update && sudo apt install bazel
 sudo apt update && sudo apt full-upgrade
 sudo apt install bazel-1.0.0
 sudo ln -s /usr/bin/bazel-1.0.0 /usr/bin/bazel
@@ -67,13 +66,12 @@ mv ./bazel-bin/kernels/rasterize_triangles_kernel.so ./kernels/
 
 ### 3.2.1 Frequent BUG
 
-* cannot found tensorflow_framework: the solution is to build a soft link that connects the tensorflow_framework.so.x to tensorflow_framework.so in the TF directory: **lib/python3.7/site-package/tensorflow** (or tensorflow_core)
+* cannot found tensorflow_framework: the solution is to build a soft link that connects the tensorflow_framework.so.x to tensorflow_framework.so in the TF directory: `~/anaconda3/envs/process_lrs3/lib/python3.7/site-package/tensorflow` (or tensorflow_core)
 
   ```
   cd xxx/lib/python3.7/site-package/tensorflow
   ln -s libtensorflow_framework.so.1 libtensorflow_framework.so
   ```
-* Compilation failed: delete the 30 line `-D_GLIBCXX_USE_CXX11_ABI=0` in the  `BUILD` file.
 
 # 4. Verification of the Installation
 
