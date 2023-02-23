@@ -24,6 +24,14 @@
 
 获得其中的 ` BFM_model_front.mat` 存到 `./data_util/BFM_models` 路径
 
+
+## 1.4 FaceRecon Model
+
+通过这个链接下载：[链接](https://drive.google.com/file/d/1xkzE9cCbCDlJcYUJ5DG43_gp1ybBsNLB/view?usp=share_link)
+
+获得其中的 `FaceReconModel.pb` 存到 `./deep_3drecon/network/` 路径
+
+
 # 2. 安装python库
 
 

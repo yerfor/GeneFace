@@ -26,6 +26,13 @@ Extract the `BFM_model_front.mat` and place it to the `./deep_3drecon/BFM` direc
 
 Extract the `BFM_model_front.mat` and place it to the `./deep_util/BFM_models` directory.
 
+## 1.4 FaceRecon Model
+
+Download at [this link](https://drive.google.com/file/d/1xkzE9cCbCDlJcYUJ5DG43_gp1ybBsNLB/view?usp=share_link)
+
+Extract the `FaceReconModel.pb` and place it to the `./deep_3drecon/network/` directory.
+
+
 # 2. Install the python libraries
 
 
