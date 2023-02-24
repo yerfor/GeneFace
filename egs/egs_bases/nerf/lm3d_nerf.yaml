@@ -14,5 +14,5 @@ infer_inject_eye_blink_mode: gt # none|gt|period. `gt` uses the eye blink sequen
 infer_eye_blink_ref_frames_start_idx: '' # start index of the ref blink sequence in the GT dataset
 infer_eye_blink_ref_frames_end_idx: ''  # end index of the ref blink sequence in the GT dataset
 
-infer_close_mouth_when_sil: True # detect sil frames, then set the mouth to close in these frames
+infer_close_mouth_when_sil: False # detect sil frames, then set the mouth to close in these frames
 infer_sil_ref_frame_idx: '' # index of the ref frame with a closed mouth in the GT dataset

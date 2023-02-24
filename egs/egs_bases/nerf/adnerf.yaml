@@ -4,3 +4,5 @@ base_config:
 task_cls: tasks.nerfs.adnerf.ADNeRFTask
 cond_type: deepspeech
 no_smo_iterations: 20_0000
+cond_win_size: 16
+smo_win_size: 8

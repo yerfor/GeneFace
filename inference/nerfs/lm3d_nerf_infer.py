@@ -105,7 +105,7 @@ class LM3dNeRFInfer(BaseNeRFInfer):
             raise NotImplementedError()
 
         # step5. close the mouth in silent frames
-        if hparams['infer_close_mouth_when_sil']:
+        if hparams.get('infer_close_mouth_when_sil', False):
             idexp_lm3d_normalized = idexp_lm3d_normalized.reshape([-1, 68*3])
             mel, energy = get_mel_from_fname(self.wav16k_name, return_energy=True)
             energy = energy.reshape([-1])
