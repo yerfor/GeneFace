@@ -21,7 +21,7 @@
 
 在[这个release](https://github.com/yerfor/GeneFace/releases/tag/v1.0.0)中，我们提供了预训练的GeneFace模型和处理好的数据集，以便您能快速上手。在本小节的剩余部分我们将介绍如何分4个步骤运行这些模型。如果您想在您自己的目标人物视频上训练GeneFace，请遵循 `docs/prepare_env`、`docs/process_data` 、`docs/train_models` 中的步骤。
 
-步骤1：根据我们在`docs/prepare_env/install_guide_nerf.md`中的步骤，新建一个名为`geneface`的Python环境。通过[这个链接](https://drive.google.com/drive/folders/1YCxXKJFfo1w01PzayhnxWSZZK5k7spSH?usp=share_link)下载`BFM_model_front.mat`，将其复制到`./deep_3drecon/BFM` 和 `./deep_util/BFM_models` 目录下。
+步骤1：根据我们在`docs/prepare_env/install_guide_nerf.md`中的步骤，新建一个名为`geneface`的Python环境。通过[这个链接](https://drive.google.com/drive/folders/1YCxXKJFfo1w01PzayhnxWSZZK5k7spSH?usp=share_link)下载`BFM_model_front.mat`，将其复制到`./deep_3drecon/BFM` 和 `./data_util/BFM_models` 目录下。
 
 步骤2：下载`lrs3.zip`和`May.zip`文件，并将其解压在`checkpoints`文件夹中。
 
