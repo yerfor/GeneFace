@@ -1,0 +1,11 @@
+base_config:
+  - egs/egs_bases/postnet/base.yaml
+
+video_id: Zhang2
+
+task_cls: tasks.postnet.lm3d_postnet_adv_sync_pitch.PostnetAdvSyncTask
+audio2motion_task_cls: tasks.audio2motion.lm3d_vae_sync_pitch.VAESyncAudio2MotionTask
+audio2motion_work_dir: checkpoints/lrs3/lm3d_vae_sync_pitch/
+audio2motion_ckpt_steps: 40000
+
+postnet_lambda_reg: 0.02

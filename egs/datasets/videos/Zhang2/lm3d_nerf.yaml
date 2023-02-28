@@ -1,0 +1,5 @@
+base_config:
+  - egs/egs_bases/nerf/lm3d_nerf.yaml
+  - ./base.yaml
+
+video_id: Zhang2

@@ -1,10 +1,14 @@
+import math
 import torch
 from torch import nn
 from torch.nn import functional as F
 import torch.distributions as dist
 import numpy as np
+
 from modules.audio2motion.flow_base import Glow, WN, ResidualCouplingBlock
-import math
+from modules.audio2motion.transformer_base import Embedding
+
+from utils.commons.pitch_utils import f0_to_coarse
 
 
 class LambdaLayer(nn.Module):
@@ -329,6 +333,90 @@ class VAEModel(nn.Module):
             ret['mask'] = mask
 
             return x_recon
+
+
+class PitchContourVAEModel(nn.Module):
+    def __init__(self, in_out_dim=64, sqz_prior=False, cond_drop=False, use_prior_flow=True):
+        super().__init__()
+        mel_feat_dim = 64
+        mel_in_dim = 1024 # hubert
+        
+        cond_dim = mel_feat_dim
+        self.mel_encoder = nn.Sequential(*[
+                nn.Conv1d(mel_in_dim, 64, 3, 1, 1, bias=False),
+                nn.BatchNorm1d(64),
+                nn.GELU(),
+                nn.Conv1d(64, mel_feat_dim, 3, 1, 1, bias=False)
+            ])
+        
+        self.pitch_embed = Embedding(300, mel_feat_dim, None)
+        self.pitch_encoder = nn.Sequential(*[
+                nn.Conv1d(mel_feat_dim, 64, 3, 1, 1, bias=False),
+                nn.BatchNorm1d(64),
+                nn.GELU(),
+                nn.Conv1d(64, 32, 3, 1, 1, bias=False)
+            ])
+        cond_dim += 32
+
+        self.cond_drop = cond_drop
+        if self.cond_drop:
+            self.dropout = nn.Dropout(0.5)
+
+        self.in_dim, self.out_dim = in_out_dim, in_out_dim
+        self.sqz_prior = sqz_prior
+        self.use_prior_flow = use_prior_flow
+        self.vae = FVAE(in_out_channels=in_out_dim, hidden_channels=256, latent_size=16, kernel_size=5,
+            enc_n_layers=8, dec_n_layers=4, gin_channels=cond_dim, strides=[4,],
+            use_prior_glow=self.use_prior_flow, glow_hidden=64, glow_kernel_size=3, glow_n_blocks=4,sqz_prior=sqz_prior)
+        self.downsampler = LambdaLayer(lambda x: F.interpolate(x.transpose(1,2), scale_factor=0.5, mode='nearest').transpose(1,2))
+
+    def num_params(self, model, print_out=True, model_name="model"):
+        parameters = filter(lambda p: p.requires_grad, model.parameters())
+        parameters = sum([np.prod(p.size()) for p in parameters]) / 1_000_000
+        if print_out:
+            print(f'| {model_name} Trainable Parameters: %.3fM' % parameters)
+        return parameters
+    
+    @property
+    def device(self):
+        return self.vae.parameters().__next__().device
+
+    def forward(self, batch, ret, train=True, return_latent=False, temperature=1.):
+        infer = not train
+        mask = batch['y_mask'].to(self.device)
+        mel = batch['hubert'].to(self.device)
+        f0 = batch['f0'].to(self.device) # [b,t]
+        mel = self.downsampler(mel)
+        f0 = self.downsampler(f0.unsqueeze(-1)).squeeze(-1)
+        f0_coarse = f0_to_coarse(f0)
+        pitch_emb = self.pitch_embed(f0_coarse)
+        cond_feat = self.mel_encoder(mel.transpose(1,2)).transpose(1,2)
+        pitch_feat = self.pitch_encoder(pitch_emb.transpose(1,2)).transpose(1,2)
+        cond_feat = torch.cat([cond_feat, pitch_feat], dim=-1)
+
+        if self.cond_drop:
+            cond_feat = self.dropout(cond_feat)
+        
+        if not infer:
+            exp = batch['y'].to(self.device)
+            x = exp
+            x_recon, loss_kl, z_p, m_q, logs_q = self.vae(x=x, x_mask=mask, g=cond_feat, infer=False)
+            x_recon = x_recon * mask.unsqueeze(-1)
+            ret['pred'] = x_recon
+            ret['mask'] = mask
+            ret['loss_kl'] = loss_kl
+            if return_latent:
+                ret['m_q'] = m_q
+                ret['z_p'] = z_p
+            return x_recon, loss_kl, m_q, logs_q
+        else:
+            x_recon, z_p = self.vae(x=None, x_mask=mask, g=cond_feat, infer=True, temperature=temperature)
+            x_recon = x_recon * mask.unsqueeze(-1)
+            ret['pred'] = x_recon
+            ret['mask'] = mask
+
+            return x_recon
+
 
 if __name__ == '__main__':
     model = FVAE(in_out_channels=64, hidden_channels=128, latent_size=32,kernel_size=3, enc_n_layers=6, dec_n_layers=2, 

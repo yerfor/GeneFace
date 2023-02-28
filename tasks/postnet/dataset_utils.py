@@ -14,9 +14,10 @@ class PostnetDataset(torch.utils.data.Dataset):
         binary_file_name = os.path.join(self.person_binary_data_dir, "trainval_dataset.npy")
         person_ds_dict = np.load(binary_file_name, allow_pickle=True).tolist()
         mel = person_ds_dict['mel']
+        f0 = person_ds_dict['f0'].reshape([-1,1])
         hubert = person_ds_dict['hubert']
-        if len(mel.shape) == 0: # is object
-            mel = mel.tolist()['mel']
+        # if len(mel.shape) == 0: # is object
+        #     mel = mel.tolist()['mel']
         train_lm3d_normalized = np.stack([sample['idexp_lm3d_normalized'] for sample in person_ds_dict['train_samples']], axis=0)
         train_lm3d = np.stack([sample['idexp_lm3d'] for sample in person_ds_dict['train_samples']], axis=0)
         val_lm3d_normalized = np.stack([sample['idexp_lm3d_normalized'] for sample in person_ds_dict['val_samples']], axis=0)
@@ -25,21 +26,25 @@ class PostnetDataset(torch.utils.data.Dataset):
         mel_len = mel.shape[0]
         if mel_len > 2 * lm3d_len:
             mel = mel[:2*lm3d_len] 
+            f0 = f0[:2*lm3d_len] 
             hubert = hubert[:2*lm3d_len]
         elif mel_len < 2 * lm3d_len:
             num_to_pad = 2 * lm3d_len - mel_len
             mel = np.pad(mel, ((0,num_to_pad),(0,0)), mode="constant")
+            f0 = np.pad(f0, ((0,num_to_pad),(0,0)), mode="constant")
             hubert = np.pad(hubert, ((0,num_to_pad),(0,0)), mode="constant")
 
         if prefix == 'train':
             lm3d_normalized = train_lm3d_normalized
             lm3d = train_lm3d
             mel = mel[:lm3d_normalized.shape[0]*2]
+            f0 = f0[:lm3d_normalized.shape[0]*2]
             hubert = hubert[:lm3d_normalized.shape[0]*2]
         elif prefix == 'val':
             lm3d_normalized = val_lm3d_normalized
             lm3d = val_lm3d
             mel = mel[train_lm3d_normalized.shape[0]*2 : train_lm3d_normalized.shape[0]*2 + lm3d_normalized.shape[0]*2]
+            f0 = f0[train_lm3d_normalized.shape[0]*2 : train_lm3d_normalized.shape[0]*2 + lm3d_normalized.shape[0]*2]
             hubert = hubert[train_lm3d_normalized.shape[0]*2 : train_lm3d_normalized.shape[0]*2 + lm3d_normalized.shape[0]*2]
         else:
             raise ValueError("prefix should in train/val !")
@@ -48,6 +53,7 @@ class PostnetDataset(torch.utils.data.Dataset):
         target_x_len = mel.shape[0] // 8 * 8
         target_y_len = target_x_len // 2
         mel = mel[:target_x_len]
+        f0 = f0[:target_x_len].reshape([-1,])
         hubert = hubert[:target_x_len]
         lm3d_normalized = lm3d_normalized[:target_y_len]
         lm3d_normalized = lm3d_normalized.reshape(lm3d_normalized.shape[0], -1)
@@ -58,6 +64,7 @@ class PostnetDataset(torch.utils.data.Dataset):
         idexp_lm3d_std = person_ds_dict['idexp_lm3d_std'][:target_y_len].reshape(1, -1)
         self.person_ds = {
             'mel': torch.from_numpy(mel).float().unsqueeze(0),
+            'f0': torch.from_numpy(f0).float().unsqueeze(0),
             'hubert': torch.from_numpy(hubert).float().unsqueeze(0),
             'idexp_lm3d_normalized': torch.from_numpy(lm3d_normalized).float().unsqueeze(0),
             'idexp_lm3d': torch.from_numpy(lm3d).float().unsqueeze(0),

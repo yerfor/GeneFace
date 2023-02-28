@@ -1,0 +1,5 @@
+base_config:
+  - egs/egs_bases/postnet/base.yaml
+
+video_id: Zhang2
+

@@ -57,11 +57,24 @@ class PostnetInfer:
         else:
             num_to_pad = x_multiply - len_mel % x_multiply
         hubert = np.pad(hubert, pad_width=((0,num_to_pad), (0,0)))
+
+        from data_gen.process_lrs3.process_audio_mel_f0 import extract_mel_from_fname,extract_f0_from_wav_and_mel
+        wav, mel = extract_mel_from_fname(self.wav16k_name)
+        f0, f0_coarse = extract_f0_from_wav_and_mel(wav, mel)
+        f0 = f0.reshape([-1,1])
+        if f0.shape[0] > len(hubert):
+            f0 = f0[:len(hubert)]
+        else:
+            num_to_pad = len(hubert) - len(f0)
+            f0 = np.pad(f0, pad_width=((0,num_to_pad), (0,0)))
+        f0 = f0.squeeze(-1)
+        
         t_x = hubert.shape[0]
         x_mask = torch.ones([1, t_x]).float()
         y_mask = torch.ones([1, t_x//2]).float()
         sample = {
             'hubert': torch.from_numpy(hubert).float().unsqueeze(0),
+            'f0': torch.from_numpy(f0).float().unsqueeze(0),
             'x_mask': x_mask,
             'y_mask': y_mask,
             }

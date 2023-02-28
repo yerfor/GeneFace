@@ -1,0 +1,6 @@
+base_config:
+  - egs/egs_bases/nerf/lm3d_nerf_torso.yaml
+  - ./base.yaml
+
+video_id: Zhang2
+head_model_dir: checkpoints/Zhang2/lm3d_nerf
