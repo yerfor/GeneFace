@@ -1,0 +1,100 @@
+# dataset-related
+raw_data_dir: data/raw/videos
+processed_data_dir: data/processed/videos
+binary_data_dir: data/binary/videos
+video_id: ''
+task_cls: ''
+
+# project-related
+work_dir: ''
+load_ckpt: ''
+tb_log_interval: 100
+num_ckpt_keep: 1
+val_check_interval: 10000
+valid_infer_interval: 10000
+num_sanity_val_steps: 2
+num_valid_plots: 5
+eval_max_batches: 100 # num_test_plots
+print_nan_grads: false
+resume_from_checkpoint: 0 # specify the step, 0 for latest
+amp: false
+valid_monitor_key: val_loss
+valid_monitor_mode: min
+save_best: true
+debug: false
+save_codes:
+- tasks
+- modules
+- egs
+
+# testing related
+save_gt: true
+
+# training-scheme-related
+max_updates: 25_0000 # 20_0000 for training the whole head, 5_0000 for finetuning the mouth
+seed: 9999
+lr: 0.0005
+scheduler: exponential # exponential|rsqrt|warmup|none|step_lr
+warmup_updates: 0
+optimizer_adam_beta1: 0.9
+optimizer_adam_beta2: 0.999
+weight_decay: 0
+clip_grad_norm: 0 # disable grad clipping 
+clip_grad_value: 0 # disable grad clipping 
+accumulate_grad_batches: 1
+
+# model-related
+cond_type: '' # deepspeech, esperanto, idexp_lm3d
+
+# training
+amp: true # use fp16
+
+# NeRF-related 
+near: 0.3
+far: 0.9
+n_rays: 65536 # num rays sampled per image for each training step, default 4096*16
+cuda_ray: true # use CUDA raymarching instead of pytorch
+max_steps: 16 # max num steps sampled per ray (only valid when using --cuda_ray)
+num_steps: 16 # num steps sampled per ray (only valid when NOT using --cuda_ray)
+upsample_steps: 0 # num steps up-sampled per ray (only valid when NOT using --cuda_ray)
+update_extra_interval: 16 # iter interval to update extra status (only valid when using --cuda_ray)
+max_ray_batch: 4096 # batch size of rays at inference to avoid OOM (only valid when NOT using --cuda_ray)
+
+finetune_lips: true
+finetune_lips_start_iter: 200000
+lambda_lpips_loss: 0.01 # auxiliary loss for finetune lips
+lambda_weights_entropy: 0.0001
+lambda_ambient: 0.1
+
+min_near: 0.05 # minimum near distance for camera
+bound: 1 # assume the scene is bounded in box[-bound, bound]^3, if > 1, will invoke adaptive ray marching.
+scale: 4 # scale camera location into box[-bound, bound]^3
+offset: [0, 0, 0] # offset of camera location
+dt_gamma: 0.00390625 # default 1/256, dt_gamma (>=0) for adaptive ray marching. set to 0 to disable, >0 to accelerate rendering (but usually with worse quality)
+density_thresh: 10 # threshold for density grid to be occupied (sigma)
+smooth_lips: true
+
+# Network
+num_layers_sigma: 3
+hidden_dim_sigma: 64
+geo_feat_dim: 64 
+num_layers_color: 2
+hidden_dim_color: 64
+cond_out_dim: 64
+num_layers_ambient: 3
+hidden_dim_ambient: 64
+ambient_out_dim: 2
+with_att: true
+individual_embedding_num: 10000
+individual_embedding_dim: 4
+use_window_cond: true
+# infer
+infer_cond_name: ''
+infer_out_video_name: ''
+infer_scale_factor: 1.0
+infer_smo_std: 0.
+infer_audio_source_name: ''
+infer_c2w_name: ''
+infer_lm3d_lle_percent: 0. # percent of lle fused feature to compose the processed lm3d
+infer_lm3d_smooth_sigma: 0. # sigma of gaussian kernel to smooth the predicted lm3d
+infer_pose_smooth_sigma: 2.

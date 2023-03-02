@@ -231,7 +231,7 @@ class ADNeRFTask(BaseTask):
         gen_dir = self.gen_dir
         base_fn = f"frame_{sample['idx']}"
         self.save_result(img_pred,  base_fn , gen_dir)
-        target = sample['com_img'] if hparams['use_pos_deform'] else sample['head_img']
+        target = sample['gt_img'] if hparams['use_pos_deform'] else sample['head_img']
         img_gt = target.reshape([H, W, 3])
         if hparams['save_gt']:
             base_fn = f"frame_{sample['idx']}_gt"

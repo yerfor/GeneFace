@@ -137,7 +137,7 @@ class ADNeRFTorsoTask(ADNeRFTask):
                     }
             else:
                 # Run Torso NeRF
-                target = sample['com_img']
+                target = sample['gt_img']
                 rect = [0, H/2, W, H/2] # only sample the lower part for torso
 
                 rays_o, rays_d, select_coords = self.torso_rays_sampler(H, W, focal, c2w_t0, n_rays=None, rect=rect, 
@@ -222,7 +222,7 @@ class ADNeRFTorsoTask(ADNeRFTask):
             gen_dir = self.gen_dir
             base_fn = f"frame_{sample['idx']}"
             self.save_result(img_pred,  base_fn , gen_dir)
-            target = sample['com_img']
+            target = sample['gt_img']
             img_gt = target.reshape([H, W, 3])
             if hparams['save_gt']:
                 base_fn = f"frame_{sample['idx']}_gt"

@@ -59,25 +59,33 @@ def get_win_conds(conds, idx, smo_win_size=8, pad_option='zero'):
     return conds_win
 
 
-def load_data(processed_dir):    
-    com_img_dir = os.path.join(processed_dir, "com_imgs")
+def load_processed_data(processed_dir):
+    # images required by AD-NeRF
     head_img_dir = os.path.join(processed_dir, "head_imgs")
     ori_img_dir = os.path.join(processed_dir, "ori_imgs")
     parsing_dir = os.path.join(processed_dir, "parsing")
+    # images required by RAD-NeRF
+    torso_img_dir = os.path.join(processed_dir, "torso_imgs")
+    gt_img_dir = os.path.join(processed_dir, "gt_imgs")
+
     background_img_name = os.path.join(processed_dir, "bc.jpg")
     train_json_name = os.path.join(processed_dir, "transforms_train.json")
     val_json_name = os.path.join(processed_dir, "transforms_val.json")
     track_params_name = os.path.join(processed_dir, "track_params.pt")
-    deepspeech_npy_name = os.path.join(processed_dir, "aud.npy")
-    config_txt_name = os.path.join(processed_dir, "HeadNeRF_config.txt")
-    coeff_npy_name = os.path.join(processed_dir, "coeff.npy")
-    hubert_npy_name = os.path.join(processed_dir, "hubert.npy")
-    mel_f0_npy_name = os.path.join(processed_dir, "mel_f0.npy")
+    deepspeech_npy_name = os.path.join(processed_dir, "aud_deepspeech.npy")
+    esperanto_npy_name = os.path.join(processed_dir, "aud_esperanto.npy")
+    coeff_npy_name = os.path.join(processed_dir, "vid_coeff.npy")
+    hubert_npy_name = os.path.join(processed_dir, "aud_hubert.npy")
+    mel_f0_npy_name = os.path.join(processed_dir, "aud_mel_f0.npy")
     
+    # required by RAD-NeRF
+
     ret_dict = {}
 
     print("loading deepspeech ...")
     deepspeech_features = np.load(deepspeech_npy_name)
+    print("loading Esperanto ...")
+    esperanto_features = np.load(esperanto_npy_name)
     print("loading hubert ...")
     hubert_features = np.load(hubert_npy_name)
     ret_dict['hubert'] = hubert_features
@@ -109,6 +117,13 @@ def load_data(processed_dir):
     elif deepspeech_features.shape[0] > coeff_arr.shape[0]:
         deepspeech_features = deepspeech_features[:coeff_arr.shape[0]]
 
+    if esperanto_features.shape[0] < coeff_arr.shape[0]:
+        num_to_pad = coeff_arr.shape[0] - esperanto_features.shape[0]
+        tmp = np.zeros([num_to_pad, 16, 44])
+        esperanto_features = np.concatenate([esperanto_features, tmp], axis=0)
+    elif esperanto_features.shape[0] > coeff_arr.shape[0]:
+        esperanto_features = esperanto_features[:coeff_arr.shape[0]]
+
     translation = coeff_arr[:, 254:257] # [T_y, c=3]
     angles = euler2quaterion(coeff_arr[:, 224:227]) # # [T_y, c=4]
     pose_deep3drecon = np.concatenate([translation, angles], axis=1)
@@ -123,25 +138,16 @@ def load_data(processed_dir):
     ret_dict['H'], ret_dict['W'] = bc_img.shape[:2]
     ret_dict['focal'], ret_dict['cx'], ret_dict['cy'] = float(train_meta['focal_len']), float(train_meta['cx']), float(train_meta['cy'])
 
-    print("loading config.txt ...")
-    with open(config_txt_name) as f:
-        config_txt = f.readlines()
-        for line in config_txt:
-            if line.startswith("near"):
-                ret_dict['near'] = eval(line.split("=")[-1])
-            elif line.startswith("far"):
-                ret_dict['far'] = eval(line.split("=")[-1])
-
     idexp_lm3d_normalized_win_lst = []
-    hubert_win_lst = []
+    # hubert_win_lst = []
     for frame in train_meta['frames'] + val_meta['frames'] :
         idx = frame['aud_id']
         idexp_lm3d_normalized_win = get_win_conds(idexp_lm3d_arr_normalized, idx, smo_win_size=exp_cond_win_size, pad_option='zero')
         idexp_lm3d_normalized_win_lst.append(idexp_lm3d_normalized_win)
-        hubert_win = get_win_conds(hubert_features, idx, smo_win_size=16)
-        hubert_win_lst.append(hubert_win)
+        # hubert_win = get_win_conds(hubert_features, idx, smo_win_size=16)
+        # hubert_win_lst.append(hubert_win)
     idexp_lm3d_normalized_wins_arr = np.stack(idexp_lm3d_normalized_win_lst, axis=0) # [T, t_w, 204]
-    hubert_win_arr = np.stack(hubert_win_lst, axis=0) # [T, t_w, 204]
+    # hubert_win_arr = np.stack(hubert_win_lst, axis=0) # [T, t_w, 204]
    
     # obtaining train samples
     train_samples = []
@@ -150,26 +156,29 @@ def load_data(processed_dir):
         idx = frame['aud_id']
         ori_img_fname = os.path.join(ori_img_dir,f"{idx}.jpg")
         head_img_fname = os.path.join(head_img_dir,f"{idx}.jpg")
-        com_img_fname = os.path.join(com_img_dir,f"{idx}.jpg")
+        torso_img_fname = os.path.join(torso_img_dir,f"{idx}.png")
+        gt_img_fname = os.path.join(gt_img_dir,f"{idx}.jpg")
         parsing_fname = os.path.join(parsing_dir,f"{idx}.png")
         
         camera2world_matrix = np.array(frame['transform_matrix'])
         euler, trans = c2w_to_euler_trans(camera2world_matrix)
         face_rect = np.array(frame['face_rect'])
         deepspeech_wins = get_win_conds(deepspeech_features, idx, smo_win_size=audio_smo_win_size, pad_option='zero')
+        esperanto_wins = get_win_conds(esperanto_features, idx, smo_win_size=audio_smo_win_size, pad_option='zero')
 
         idexp_lm3d_normalized_win = get_win_conds(idexp_lm3d_arr_normalized, idx, smo_win_size=exp_cond_win_size, pad_option='zero') # [cond_win_size, 68, 3]
         idexp_lm3d_normalized_wins = get_win_conds(idexp_lm3d_normalized_wins_arr, idx, smo_win_size=exp_smo_win_size, pad_option='zero') # [smo_win_size, cond_win_size, 68, 3]
 
-        hubert_win = hubert_win_arr[idx]
-        hubert_wins = get_win_conds(hubert_win_arr, idx, smo_win_size=8, pad_option='zero')
+        # hubert_win = hubert_win_arr[idx]
+        # hubert_wins = get_win_conds(hubert_win_arr, idx, smo_win_size=8, pad_option='zero')
 
         sample = {
             'idx': idx,
             'face_rect': face_rect,
             'ori_img_fname': ori_img_fname,
             'head_img_fname': head_img_fname,
-            'com_img_fname': com_img_fname,
+            'torso_img_fname': torso_img_fname,
+            'gt_img_fname': gt_img_fname,
             'parsing_fname': parsing_fname,
             'c2w': camera2world_matrix,
             'euler': euler,
@@ -182,9 +191,11 @@ def load_data(processed_dir):
             'idexp_lm3d_normalized_win': idexp_lm3d_normalized_win,
             'idexp_lm3d_normalized_wins': idexp_lm3d_normalized_wins,
             'deepspeech_win': deepspeech_features[idx],
-            'hubert_win': hubert_win,
             'deepspeech_wins': deepspeech_wins,
-            'hubert_wins': hubert_wins,
+            'esperanto_win': esperanto_features[idx],
+            'esperanto_wins': esperanto_wins,
+            # 'hubert_win': hubert_win,
+            # 'hubert_wins': hubert_wins,
         }
         train_samples.append(sample)
     ret_dict['train_samples'] = train_samples
@@ -196,26 +207,29 @@ def load_data(processed_dir):
         idx = frame['aud_id']
         ori_img_fname = os.path.join(ori_img_dir,f"{idx}.jpg")
         head_img_fname = os.path.join(head_img_dir,f"{idx}.jpg")
-        com_img_fname = os.path.join(com_img_dir,f"{idx}.jpg")
+        torso_img_fname = os.path.join(torso_img_dir,f"{idx}.png")
+        gt_img_fname = os.path.join(gt_img_dir,f"{idx}.jpg")
         parsing_fname = os.path.join(parsing_dir,f"{idx}.png")
         
         face_rect = np.array(frame['face_rect'])
         camera2world_matrix = np.array(frame['transform_matrix'])
         euler, trans = c2w_to_euler_trans(camera2world_matrix)
         deepspeech_wins = get_win_conds(deepspeech_features, idx, smo_win_size=audio_smo_win_size, pad_option='zero')
+        esperanto_wins = get_win_conds(esperanto_features, idx, smo_win_size=audio_smo_win_size, pad_option='zero')
         
         idexp_lm3d_normalized_win = get_win_conds(idexp_lm3d_arr_normalized, idx, smo_win_size=exp_cond_win_size, pad_option='zero')
         idexp_lm3d_normalized_wins = get_win_conds(idexp_lm3d_normalized_wins_arr, idx, smo_win_size=exp_smo_win_size, pad_option='zero')
 
-        hubert_win = hubert_win_arr[idx]
-        hubert_wins = get_win_conds(hubert_win_arr, idx, smo_win_size=8, pad_option='zero')
+        # hubert_win = hubert_win_arr[idx]
+        # hubert_wins = get_win_conds(hubert_win_arr, idx, smo_win_size=8, pad_option='zero')
 
         sample = {
             'idx': idx,
             'face_rect': face_rect,
             'ori_img_fname': ori_img_fname,
             'head_img_fname': head_img_fname,
-            'com_img_fname': com_img_fname,
+            'torso_img_fname': torso_img_fname,
+            'gt_img_fname': gt_img_fname,
             'parsing_fname': parsing_fname,
             'c2w': camera2world_matrix,
             'euler': euler,
@@ -227,113 +241,18 @@ def load_data(processed_dir):
             'idexp_lm3d_normalized': idexp_lm3d_arr_normalized[idx],
             'idexp_lm3d_normalized_win': idexp_lm3d_normalized_win,
             'idexp_lm3d_normalized_wins': idexp_lm3d_normalized_wins,
-            'deepspeech_win': deepspeech_features[idx], # [16,29]
-            'hubert_win': hubert_win,
-            'deepspeech_wins': deepspeech_wins,
-            'hubert_wins': hubert_wins,
-        }
-
-        val_samples.append(sample)    
-    ret_dict['val_samples'] = val_samples
-
-    return ret_dict
-
-
-def load_adnerf_data(processed_dir):    
-    com_img_dir = os.path.join(processed_dir, "com_imgs")
-    head_img_dir = os.path.join(processed_dir, "head_imgs")
-    ori_img_dir = os.path.join(processed_dir, "ori_imgs")
-    parsing_dir = os.path.join(processed_dir, "parsing")
-    background_img_name = os.path.join(processed_dir, "bc.jpg")
-    train_json_name = os.path.join(processed_dir, "transforms_train.json")
-    val_json_name = os.path.join(processed_dir, "transforms_val.json")
-    track_params_name = os.path.join(processed_dir, "track_params.pt")
-    deepspeech_npy_name = os.path.join(processed_dir, "aud.npy")
-    config_txt_name = os.path.join(processed_dir, "HeadNeRF_config.txt")
-    
-    ret_dict = {}
-
-    deepspeech_features = np.load(deepspeech_npy_name)
-
-    with open(train_json_name) as f:
-        train_meta = json.load(f)
-    with open(val_json_name) as f:
-        val_meta = json.load(f)
-    bc_img = imageio.imread(background_img_name)
-    ret_dict['bc_img'] = bc_img
-    ret_dict['H'], ret_dict['W'] = bc_img.shape[:2]
-    ret_dict['focal'], ret_dict['cx'], ret_dict['cy'] = float(train_meta['focal_len']), float(train_meta['cx']), float(train_meta['cy'])
-
-    with open(config_txt_name) as f:
-        config_txt = f.readlines()
-        for line in config_txt:
-            if line.startswith("near"):
-                ret_dict['near'] = eval(line.split("=")[-1])
-            elif line.startswith("far"):
-                ret_dict['far'] = eval(line.split("=")[-1])
-
-    train_samples = []
-
-    for i_frame, frame in tqdm.tqdm(enumerate(train_meta['frames']), desc="Binarizing train set", total=len(train_meta['frames'])):
-        assert frame['aud_id'] == frame['img_id']
-        idx = frame['aud_id']
-        ori_img_fname = os.path.join(ori_img_dir,f"{idx}.jpg")
-        head_img_fname = os.path.join(head_img_dir,f"{idx}.jpg")
-        com_img_fname = os.path.join(com_img_dir,f"{idx}.jpg")
-        parsing_fname = os.path.join(parsing_dir,f"{idx}.png")
-        
-        camera2world_matrix = np.array(frame['transform_matrix'])
-        euler, trans = c2w_to_euler_trans(camera2world_matrix)
-        face_rect = np.array(frame['face_rect'])
-        deepspeech_wins = get_win_conds(deepspeech_features, idx, smo_win_size=audio_smo_win_size)
-        sample = {
-            'idx': idx,
-            'face_rect': face_rect,
-            'ori_img_fname': ori_img_fname,
-            'head_img_fname': head_img_fname,
-            'com_img_fname': com_img_fname,
-            'parsing_fname': parsing_fname,
-            'c2w': camera2world_matrix,
-            'euler': euler,
-            'trans': trans,
             'deepspeech_win': deepspeech_features[idx],
             'deepspeech_wins': deepspeech_wins,
-        }
-        train_samples.append(sample)
-    ret_dict['train_samples'] = train_samples
-
-    val_samples = []
-    for i_frame, frame in tqdm.tqdm(enumerate(val_meta['frames']), desc="Binarizing val set", total=len(val_meta['frames'])):
-        assert frame['aud_id'] == frame['img_id']
-        idx = frame['aud_id']
-        ori_img_fname = os.path.join(ori_img_dir,f"{idx}.jpg")
-        head_img_fname = os.path.join(head_img_dir,f"{idx}.jpg")
-        com_img_fname = os.path.join(com_img_dir,f"{idx}.jpg")
-        parsing_fname = os.path.join(parsing_dir,f"{idx}.png")
-        
-        face_rect = np.array(frame['face_rect'])
-        camera2world_matrix = np.array(frame['transform_matrix'])
-        euler, trans = c2w_to_euler_trans(camera2world_matrix)
-        deepspeech_wins = get_win_conds(deepspeech_features, idx, smo_win_size=audio_smo_win_size, pad_option='zero')
-        sample = {
-            'idx': idx,
-            'face_rect': face_rect,
-            'ori_img_fname': ori_img_fname,
-            'head_img_fname': head_img_fname,
-            'com_img_fname': com_img_fname,
-            'parsing_fname': parsing_fname,
-            'c2w': camera2world_matrix,
-            'euler': euler,
-            'trans': trans,
-            'deepspeech_win': deepspeech_features[idx], # [16,29]
-            'deepspeech_wins': deepspeech_wins,
+            'esperanto_win': esperanto_features[idx],
+            'esperanto_wins': esperanto_wins,
+            # 'hubert_win': hubert_win,
+            # 'hubert_wins': hubert_wins,
         }
 
         val_samples.append(sample)    
     ret_dict['val_samples'] = val_samples
 
     return ret_dict
-
 
 
 class Binarizer:
@@ -345,8 +264,8 @@ class Binarizer:
         binary_dir = os.path.join(self.data_dir, 'binary/videos', video_id)
         out_fname = os.path.join(binary_dir, "trainval_dataset.npy")
         os.makedirs(binary_dir, exist_ok=True)
-        ret = load_data(processed_dir)
-        mel_name = os.path.join(processed_dir, 'mel_f0.npy')
+        ret = load_processed_data(processed_dir)
+        mel_name = os.path.join(processed_dir, 'aud_mel_f0.npy')
         mel_f0_dict = np.load(mel_name, allow_pickle=True).tolist()
         ret.update(mel_f0_dict)
         np.save(out_fname, ret, allow_pickle=True)

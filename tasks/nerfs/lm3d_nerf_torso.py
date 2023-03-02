@@ -167,7 +167,7 @@ class Lm3dNeRFTorsoTask(ADNeRFTorsoTask):
             else:
                 # Run Torso NeRF
                 # uniformly sample the rays, in the canoical space, i.e., with c2w_t0
-                target = sample['com_img']
+                target = sample['gt_img']
                 rect = [0, H/2, W, H/2] # only sample the lower part for torso
                 rays_o, rays_d, select_coords = self.torso_rays_sampler(H, W, focal, c2w_t0, n_rays=None, rect=rect, 
                             in_rect_percent=hparams['in_rect_percent'])

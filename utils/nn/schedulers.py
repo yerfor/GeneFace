@@ -1,4 +1,7 @@
 import numpy as np
+from utils.commons.hparams import hparams
+
+
 class NoneSchedule(object):
     def __init__(self, optimizer, lr):
         self.optimizer = optimizer
@@ -82,6 +85,7 @@ class ExponentialSchedule(NoneSchedule):
 
 class ExponentialScheduleWithAudattNet(NoneSchedule):
     """
+    Default Scheduler in AD-NeRF
     for audatt net, since it starts at 20_0000 steps, we need to enlarge its lr
     in optimizer, we set param_groups[1] to optimize audatt net
     """
@@ -106,7 +110,41 @@ class ExponentialScheduleWithAudattNet(NoneSchedule):
         self.optimizer.param_groups[1]['lr'] = self.lr * 5
         return self.lr
 
+class ExponentialScheduleForRADNeRF(NoneSchedule):
+    """
+    Default Scheduler in RAD-NeRF
+    RAD-NeRF has two groups of params with different lr
+    for tileGrid embedding, the lr=5e-3
+    for other network params, the lr=5e-4
+    """
+    def __init__(self, optimizer, lr, warmup_updates=0):
+        self.optimizer = optimizer
+        self.constant_lr = self.lr = lr # 0.0005
+        self.warmup_updates = warmup_updates
+        self.finetune_lips = hparams['finetune_lips']
+        self.finetune_lips_start_iter = hparams['finetune_lips_start_iter']
 
+        optimizer.param_groups[0]['lr'] = self.lr # for Net_params in RAD-NeRF, lr starts from 0.0005
+        optimizer.param_groups[1]['lr'] = self.lr * 10 # for tileGrid, lr starts from 0.005
+        self.step(0)
+
+    def step(self, num_updates):
+        constant_lr = self.constant_lr
+        if self.warmup_updates > 0 and num_updates <= self.warmup_updates:
+            warmup = min(num_updates / self.warmup_updates, 1.0)
+            self.lr = max(constant_lr * warmup, 1e-7)
+        else:
+            if self.finetune_lips and num_updates > self.finetune_lips_start_iter:
+                new_lrate = constant_lr * (0.05 ** (num_updates / 250_000)) # decay by 0.05x for every 250k steps
+            else:
+                new_lrate = constant_lr * (0.1 ** (num_updates / 250_000)) # decay by 0.1x for every 250k steps
+
+            self.lr = max(new_lrate, 1e-7)
+
+        self.optimizer.param_groups[0]['lr'] = self.lr
+        self.optimizer.param_groups[1]['lr'] = self.lr * 10
+        return self.lr
+    
 class CosineSchedule(NoneSchedule):
     def __init__(self, optimizer, lr, warmup_updates, total_updates):
         self.optimizer = optimizer

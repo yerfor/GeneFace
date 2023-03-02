@@ -26,12 +26,12 @@ def lm68_2_lm5(in_lm):
     lm = lm[[1,2,0,3,4],:2]
     return lm
 
-def process_video(fname, out_name=None):
+def process_video(fname, out_name=None, skip_tmp=True):
     assert fname.endswith(".mp4")
     if out_name is None:
         out_name = fname[:-4] + '.npy'
     tmp_name = out_name[:-4] + '.doi'
-    if os.path.exists(tmp_name):
+    if os.path.exists(tmp_name) and skip_tmp:
         print("tmp exist, skip")
         return
     if os.path.exists(out_name):
@@ -113,6 +113,6 @@ if __name__ == '__main__':
 
     video_id = args.video_id
     video_fname = f"data/raw/videos/{video_id}.mp4"
-    out_fname = f"data/processed/videos/{video_id}/coeff.npy"
-    process_video(video_fname, out_fname)
+    out_fname = f"data/processed/videos/{video_id}/vid_coeff.npy"
+    process_video(video_fname, out_fname, skip_tmp=False)
     print(f"3DMM coeff extracted at {out_fname}")

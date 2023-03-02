@@ -40,8 +40,8 @@ class NeRFDataset(torch.utils.data.Dataset):
         
         if 'head_img' not in self.samples[idx].keys():
             self.samples[idx]['head_img'] = load_image_as_uint8_tensor(self.samples[idx]['head_img_fname'])
-        if 'com_img' not in self.samples[idx].keys():
-            self.samples[idx]['com_img'] = load_image_as_uint8_tensor(self.samples[idx]['com_img_fname'])
+        if 'gt_img' not in self.samples[idx].keys():
+            self.samples[idx]['gt_img'] = load_image_as_uint8_tensor(self.samples[idx]['gt_img_fname'])
         
         sample = {
             'H': self.H,
@@ -66,7 +66,7 @@ class NeRFDataset(torch.utils.data.Dataset):
 
         sample.update({
             'head_img': raw_sample['head_img'].float() / 255.,
-            'com_img': raw_sample['com_img'].float() / 255.,
+            'gt_img': raw_sample['gt_img'].float() / 255.,
         })
                
         if self.cond_type == 'deepspeech':
