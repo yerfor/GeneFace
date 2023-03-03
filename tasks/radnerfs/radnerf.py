@@ -36,7 +36,9 @@ class RADNeRFTask(BaseTask):
         self.embedders_params = []
         self.embedders_params += [p for k, p in self.model.named_parameters() if p.requires_grad and 'position_embedder' in k]
         self.embedders_params += [p for k, p in self.model.named_parameters() if p.requires_grad and 'ambient_embedder' in k]
-        self.network_params = [p for k, p in self.model.named_parameters() if (p.requires_grad and 'position_embedder' not in k and 'ambient_embedder' not in k)]
+        self.network_params = [p for k, p in self.model.named_parameters() if (p.requires_grad and 'position_embedder' not in k and 'ambient_embedder' not in k and 'cond_att_net' not in k)]
+        self.att_net_params = [p for k, p in self.model.named_parameters() if p.requires_grad and 'cond_att_net' in k]
+        
         if hparams['cuda_ray']:
             self.model.mark_untrained_grid(self.train_dataset.poses, self.train_dataset.intrinsics)
             self.model.conds = self.train_dataset.conds
@@ -55,6 +57,11 @@ class RADNeRFTask(BaseTask):
         self.optimizer.add_param_group({
             'params': self.embedders_params,
             'lr': hparams['lr'] * 10,
+            'betas': (hparams['optimizer_adam_beta1'], hparams['optimizer_adam_beta2'])
+        })
+        self.optimizer.add_param_group({
+            'params': self.att_net_params,
+            'lr': hparams['lr'] * 5,
             'betas': (hparams['optimizer_adam_beta1'], hparams['optimizer_adam_beta2'])
         })
         return self.optimizer
@@ -126,10 +133,10 @@ class RADNeRFTask(BaseTask):
             losses_out['ambient_loss'] = (ambient * (~face_mask.view(-1))).mean()
 
             if hparams['finetune_lips'] and self.global_step > hparams['finetune_lips_start_iter']:
-                xmin, xmax, ymin, ymax = sample['rect']
-                rgb = rgb.view(-1, xmax - xmin, ymax - ymin, 3).permute(0, 3, 1, 2).contiguous()
+                xmin, xmax, ymin, ymax = sample['lip_rect']
+                gt_rgb = gt_rgb.view(-1, xmax - xmin, ymax - ymin, 3).permute(0, 3, 1, 2).contiguous()
                 pred_rgb = pred_rgb.view(-1, xmax - xmin, ymax - ymin, 3).permute(0, 3, 1, 2).contiguous()
-                losses_out['lpips_loss'] = self.criterion_lpips(pred_rgb, rgb).mean()
+                losses_out['lpips_loss'] = self.criterion_lpips(pred_rgb, gt_rgb).mean()
             if self.finetune_lips:
                 # flip in each iteration, to prevent forgetting other parts.
                 hparams['finetune_lips'] = not hparams['finetune_lips']
@@ -150,7 +157,7 @@ class RADNeRFTask(BaseTask):
     def _training_step(self, sample, batch_idx, optimizer_idx):
         self.train_dataset.global_step = self.global_step
         if self.global_step % hparams['update_extra_interval'] == 0:
-            if not (hparams['finetune_lips'] and self.global_step >= hparams['finetune_lips_start_iter']):
+            if not (self.finetune_lips and self.global_step >= hparams['finetune_lips_start_iter']):
                 with torch.cuda.amp.autocast(enabled=hparams['amp']):
                     self.model.update_extra_state()
         loss_output, model_out = self.run_model(sample)
@@ -168,6 +175,7 @@ class RADNeRFTask(BaseTask):
     def on_before_optimization(self, opt_idx):
         prefix = f"grad_norm_opt_idx_{opt_idx}"
         grad_norm_dict = {
+            f'{prefix}/cond_att': get_grad_norm(self.model.att_net_params),
             f'{prefix}/embedders_params': get_grad_norm(self.embedders_params),
             f'{prefix}/network_params': get_grad_norm(self.network_params ),
         }

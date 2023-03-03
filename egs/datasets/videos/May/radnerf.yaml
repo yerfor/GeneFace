@@ -4,3 +4,5 @@ base_config:
 video_id: May # the video file should be located at `data/raw/videos/<video_id>.mp4`
 individual_embedding_num: 10000 # should be equal or larger than the number of frames
 amp: true
+finetune_lips: false
+max_updates: 60_0000

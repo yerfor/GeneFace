@@ -10,8 +10,8 @@ work_dir: ''
 load_ckpt: ''
 tb_log_interval: 100
 num_ckpt_keep: 1
-val_check_interval: 10000
-valid_infer_interval: 10000
+val_check_interval: 2000
+valid_infer_interval: 2000
 num_sanity_val_steps: 2
 num_valid_plots: 5
 eval_max_batches: 100 # num_test_plots
@@ -72,7 +72,8 @@ scale: 4 # scale camera location into box[-bound, bound]^3
 offset: [0, 0, 0] # offset of camera location
 dt_gamma: 0.00390625 # default 1/256, dt_gamma (>=0) for adaptive ray marching. set to 0 to disable, >0 to accelerate rendering (but usually with worse quality)
 density_thresh: 10 # threshold for density grid to be occupied (sigma)
-smooth_lips: true
+
+smooth_lips: false
 
 # Network
 num_layers_sigma: 3

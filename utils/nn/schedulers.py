@@ -126,6 +126,7 @@ class ExponentialScheduleForRADNeRF(NoneSchedule):
 
         optimizer.param_groups[0]['lr'] = self.lr # for Net_params in RAD-NeRF, lr starts from 0.0005
         optimizer.param_groups[1]['lr'] = self.lr * 10 # for tileGrid, lr starts from 0.005
+        optimizer.param_groups[2]['lr'] = self.lr * 5 # for Att Net, lr starts from 0.0025
         self.step(0)
 
     def step(self, num_updates):
@@ -135,14 +136,15 @@ class ExponentialScheduleForRADNeRF(NoneSchedule):
             self.lr = max(constant_lr * warmup, 1e-7)
         else:
             if self.finetune_lips and num_updates > self.finetune_lips_start_iter:
-                new_lrate = constant_lr * (0.05 ** (num_updates / 250_000)) # decay by 0.05x for every 250k steps
+                new_lrate = constant_lr * (0.05 ** (num_updates / 200_000)) # decay by 0.05x for every 250k steps
             else:
-                new_lrate = constant_lr * (0.1 ** (num_updates / 250_000)) # decay by 0.1x for every 250k steps
+                new_lrate = constant_lr * (0.1 ** (num_updates / 200_000)) # decay by 0.1x for every 250k steps
 
             self.lr = max(new_lrate, 1e-7)
 
         self.optimizer.param_groups[0]['lr'] = self.lr
         self.optimizer.param_groups[1]['lr'] = self.lr * 10
+        self.optimizer.param_groups[2]['lr'] = self.lr * 5
         return self.lr
     
 class CosineSchedule(NoneSchedule):

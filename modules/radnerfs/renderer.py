@@ -158,7 +158,7 @@ class NeRFRenderer(nn.Module):
             if self.cond_feat is not None:
                 _lambda = 0.35
                 cond_feat = _lambda * self.cond_feat + (1 - _lambda) * cond_feat
-            # self.cond_feat = cond_feat # .detach()
+            self.cond_feat = cond_feat
 
         
         if self.individual_embedding_dim > 0:
@@ -176,7 +176,8 @@ class NeRFRenderer(nn.Module):
             counter.zero_() # set to 0
             self.local_step += 1
 
-            xyzs, dirs, deltas, rays = raymarching.march_rays_train(rays_o, rays_d, self.bound, self.density_bitfield, self.cascade, self.grid_size, nears, fars, counter, self.mean_count, perturb, 128, force_all_rays, dt_gamma, max_steps)
+            xyzs, dirs, deltas, rays = raymarching.march_rays_train(rays_o, rays_d, self.bound, self.density_bitfield, self.cascade, self.grid_size, nears, fars, counter, -1, perturb, 128, force_all_rays, dt_gamma, max_steps)
+            # xyzs, dirs, deltas, rays = raymarching.march_rays_train(rays_o, rays_d, self.bound, self.density_bitfield, self.cascade, self.grid_size, nears, fars, counter, self.mean_count, perturb, 128, force_all_rays, dt_gamma, max_steps)
 
             sigmas, rgbs, ambient = self(xyzs, dirs, cond_feat, ind_code)
             sigmas = self.density_scale * sigmas
