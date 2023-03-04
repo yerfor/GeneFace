@@ -377,15 +377,6 @@ class NeRFRenderer(nn.Module):
             self.mean_count = int(self.step_counter[:total_step, 0].sum().item() / total_step)
         self.local_step = 0
 
-        density_grid_info = {
-            "density_grid_info/min_density": self.density_grid.min().item(),
-            "density_grid_info/max_density": self.density_grid.max().item(),
-            "density_grid_info/mean_density": self.mean_count,
-            "density_grid_info/occupancy_rate": (self.density_grid > 0.01).sum() / (128**3 * self.cascade), 
-            # "density_grid_info/occupancy_rate": (self.density_grid > density_thresh).sum() / (128**3 * self.cascade), 
-            "density_grid_info/step_mean_count": self.mean_count,
-        }
-        return density_grid_info
 
     def render(self, rays_o, rays_d, cond, bg_coords, poses, staged=False, max_ray_batch=4096, **kwargs):
         # rays_o, rays_d: [B, N, 3], assumes B == 1

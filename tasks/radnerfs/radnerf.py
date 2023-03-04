@@ -165,6 +165,7 @@ class RADNeRFTask(BaseTask):
                 # when finetuning lips, we don't update the density grid and bitfield.
                 density_grid_info = self.model.update_extra_state()
                 outputs.update(density_grid_info)
+
         loss_output, model_out = self.run_model(sample)
         loss_weights = {
             'mse_loss': 1.0,
@@ -176,6 +177,17 @@ class RADNeRFTask(BaseTask):
         def mse2psnr(x): return -10. * torch.log(x) / torch.log(torch.Tensor([10.])).to(x.device)
         loss_output['head_psnr'] = mse2psnr(loss_output['mse_loss'].detach())
         outputs.update(loss_output)
+
+        if self.global_step % hparams['tb_log_interval'] == 0:
+            density_grid_info = {
+                "density_grid_info/min_density": self.model.density_grid.min().item(),
+                "density_grid_info/max_density": self.model.density_grid.max().item(),
+                "density_grid_info/mean_density": self.model.mean_density,
+                # "density_grid_info/occupancy_rate": (self.model.density_grid > 0.01).sum() / (128**3 * self.model.cascade), 
+                "density_grid_info/occupancy_rate": (self.density_grid > min(self.model.mean_density, self.model.density_thresh)).sum() / (128**3 * self.cascade), 
+                "density_grid_info/step_mean_count": self.model.mean_count
+            }
+            outputs.update(density_grid_info)
         return total_loss, outputs
     
     def on_before_optimization(self, opt_idx):
