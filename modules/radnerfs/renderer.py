@@ -90,8 +90,8 @@ class NeRFRenderer(nn.Module):
         # 3D head density grid
         density_grid = torch.zeros([self.cascade, self.grid_size ** 3]) # [CAS, H * H * H]
         density_bitfield = torch.zeros(self.cascade * self.grid_size ** 3 // 8, dtype=torch.uint8) # [CAS * H * H * H // 8]
-        self.register_buffer('density_grid', density_grid)
-        self.register_buffer('density_bitfield', density_bitfield)
+        self.register_buffer('density_grid', density_grid) # points of the grid
+        self.register_buffer('density_bitfield', density_bitfield) # use 8 bit [0~255] to represent 8 points of a cube, if grid[i]>density threshold, set this bit to 1, so each cube can be represent as 0-255
         self.mean_density = 0
         self.iter_density = 0
 
@@ -130,7 +130,7 @@ class NeRFRenderer(nn.Module):
         self.mean_count = 0
         self.local_step = 0
 
-    def run_cuda(self, rays_o, rays_d, cond, bg_coords, poses, index=0, dt_gamma=0, bg_color=None, perturb=False, force_all_rays=False, max_steps=16, T_thresh=1e-4, **kwargs):
+    def run_cuda(self, rays_o, rays_d, cond, bg_coords, poses, index=0, dt_gamma=0, bg_color=None, perturb=False, force_all_rays=False, max_steps=1024, T_thresh=1e-4, **kwargs):
         # rays_o, rays_d: [B, N, 3], assumes B == 1
         # cond: [B, 16]
         # index: [B]
@@ -176,8 +176,7 @@ class NeRFRenderer(nn.Module):
             counter.zero_() # set to 0
             self.local_step += 1
 
-            xyzs, dirs, deltas, rays = raymarching.march_rays_train(rays_o, rays_d, self.bound, self.density_bitfield, self.cascade, self.grid_size, nears, fars, counter, -1, perturb, 128, force_all_rays, dt_gamma, max_steps)
-            # xyzs, dirs, deltas, rays = raymarching.march_rays_train(rays_o, rays_d, self.bound, self.density_bitfield, self.cascade, self.grid_size, nears, fars, counter, self.mean_count, perturb, 128, force_all_rays, dt_gamma, max_steps)
+            xyzs, dirs, deltas, rays = raymarching.march_rays_train(rays_o, rays_d, self.bound, self.density_bitfield, self.cascade, self.grid_size, nears, fars, counter, self.mean_count, perturb, 128, force_all_rays, dt_gamma, max_steps)
 
             sigmas, rgbs, ambient = self(xyzs, dirs, cond_feat, ind_code)
             sigmas = self.density_scale * sigmas
@@ -189,7 +188,6 @@ class NeRFRenderer(nn.Module):
             # for training only
             results['weights_sum'] = weights_sum
             results['ambient'] = ambient_sum
-
         else:
            
             dtype = torch.float32
@@ -370,6 +368,7 @@ class NeRFRenderer(nn.Module):
 
         # convert to bitfield
         density_thresh = min(self.mean_density, self.density_thresh)
+        # each point in bitfield (a 8 bit uint) represents 8 points in density grid, 1 means the density is larger than density_threshold
         self.density_bitfield = raymarching.packbits(self.density_grid, density_thresh, self.density_bitfield)
 
         ### update step counter
@@ -378,8 +377,15 @@ class NeRFRenderer(nn.Module):
             self.mean_count = int(self.step_counter[:total_step, 0].sum().item() / total_step)
         self.local_step = 0
 
-        #print(f'[density grid] min={self.density_grid.min().item():.4f}, max={self.density_grid.max().item():.4f}, mean={self.mean_density:.4f}, occ_rate={(self.density_grid > 0.01).sum() / (128**3 * self.cascade):.3f} | [step counter] mean={self.mean_count}')
-
+        density_grid_info = {
+            "density_grid_info/min_density": self.density_grid.min().item(),
+            "density_grid_info/max_density": self.density_grid.max().item(),
+            "density_grid_info/mean_density": self.mean_count,
+            "density_grid_info/occupancy_rate": (self.density_grid > 0.01).sum() / (128**3 * self.cascade), 
+            # "density_grid_info/occupancy_rate": (self.density_grid > density_thresh).sum() / (128**3 * self.cascade), 
+            "density_grid_info/step_mean_count": self.mean_count,
+        }
+        return density_grid_info
 
     def render(self, rays_o, rays_d, cond, bg_coords, poses, staged=False, max_ray_batch=4096, **kwargs):
         # rays_o, rays_d: [B, N, 3], assumes B == 1
@@ -388,29 +394,5 @@ class NeRFRenderer(nn.Module):
         # return: pred_rgb: [B, N, 3]
 
         _run = self.run_cuda
-        
-        B, N = rays_o.shape[:2]
-        device = rays_o.device
-
-        # never stage when cuda_ray
-        if staged and not self.cuda_ray:
-            depth = torch.empty((B, N), device=device)
-            image = torch.empty((B, N, 3), device=device)
-
-            for b in range(B):
-                head = 0
-                while head < N:
-                    tail = min(head + max_ray_batch, N)
-                    results_ = _run(rays_o[b:b+1, head:tail], rays_d[b:b+1, head:tail], cond[b:b+1], bg_coords[:, head:tail], poses[b:b+1], **kwargs)
-                    depth[b:b+1, head:tail] = results_['depth']
-                    image[b:b+1, head:tail] = results_['image']
-                    head += max_ray_batch
-            
-            results = {}
-            results['depth'] = depth
-            results['image'] = image
-
-        else:
-            results = _run(rays_o, rays_d, cond, bg_coords, poses, **kwargs)
-
+        results = _run(rays_o, rays_d, cond, bg_coords, poses, **kwargs)
         return results

@@ -39,7 +39,7 @@ class RADNeRFDataset(torch.utils.data.Dataset):
 
         fl_x = fl_y = self.focal
         self.intrinsics = np.array([fl_x, fl_y, self.cx, self.cy])
-        self.poses = torch.from_numpy(np.stack([nerf_matrix_to_ngp(s['c2w']) for s in self.samples]))
+        self.poses = torch.from_numpy(np.stack([nerf_matrix_to_ngp(s['c2w'], scale=hparams['camera_scale'], offset=hparams['camera_offset']) for s in self.samples]))
         self.bg_coords = get_bg_coords(self.H, self.W, 'cpu') # [1, H*W, 2] in [-1, 1]
 
         if self.cond_type == 'deepspeech':
@@ -51,25 +51,25 @@ class RADNeRFDataset(torch.utils.data.Dataset):
         else:
             raise NotImplementedError
         
-        if hparams.get("finetune_lips", False):
-            self.lips_rect = []
-            for sample in self.samples:
-                img_id = sample['idx']
-                lms = np.loadtxt(os.path.join(hparams['processed_data_dir'],hparams['video_id'], 'ori_imgs', str(img_id) + '.lms')) # [68, 2]
-                lips = slice(48, 60)
-                xmin, xmax = int(lms[lips, 1].min()), int(lms[lips, 1].max())
-                ymin, ymax = int(lms[lips, 0].min()), int(lms[lips, 0].max())
+        self.finetune_lip_flag = False
+        self.lips_rect = []
+        for sample in self.samples:
+            img_id = sample['idx']
+            lms = np.loadtxt(os.path.join(hparams['processed_data_dir'],hparams['video_id'], 'ori_imgs', str(img_id) + '.lms')) # [68, 2]
+            lips = slice(48, 60)
+            xmin, xmax = int(lms[lips, 1].min()), int(lms[lips, 1].max())
+            ymin, ymax = int(lms[lips, 0].min()), int(lms[lips, 0].max())
 
-                # padding to H == W
-                cx = (xmin + xmax) // 2
-                cy = (ymin + ymax) // 2
+            # padding to H == W
+            cx = (xmin + xmax) // 2
+            cy = (ymin + ymax) // 2
 
-                l = max(xmax - xmin, ymax - ymin) // 2
-                xmin = max(0, cx - l)
-                xmax = min(self.H, cx + l)
-                ymin = max(0, cy - l)
-                ymax = min(self.W, cy + l)
-                self.lips_rect.append([xmin, xmax, ymin, ymax])
+            l = max(xmax - xmin, ymax - ymin) // 2
+            xmin = max(0, cx - l)
+            xmax = min(self.H, cx + l)
+            ymin = max(0, cy - l)
+            ymax = min(self.W, cy + l)
+            self.lips_rect.append([xmin, xmax, ymin, ymax])
 
         self.training = training
         self.global_step = 0
@@ -86,7 +86,7 @@ class RADNeRFDataset(torch.utils.data.Dataset):
             self.samples[idx]['torso_img'] = load_image_as_uint8_tensor(self.samples[idx]['torso_img_fname'])
         if 'gt_img' not in self.samples[idx].keys():
             self.samples[idx]['gt_img'] = load_image_as_uint8_tensor(self.samples[idx]['gt_img_fname'])
-        
+
         sample = {
             'H': self.H,
             'W': self.W,
@@ -97,6 +97,7 @@ class RADNeRFDataset(torch.utils.data.Dataset):
             'far': self.far,
             'idx': raw_sample['idx'],
             'face_rect': raw_sample['face_rect'],
+            'lip_rect': self.lips_rect[idx],
             'bc_img': self.bc_img,
             'c2w': raw_sample['c2w'][:3],
             'euler': raw_sample['euler'],
@@ -126,12 +127,11 @@ class RADNeRFDataset(torch.utils.data.Dataset):
             raise NotImplementedError
         
         ngp_pose = self.poses[idx].unsqueeze(0)
-        if self.training and hparams["finetune_lips"] and self.global_step > hparams['finetune_lips_start_iter']:
-            lip_rect = self.lips_rect[idx]
-            sample['lip_rect'] = lip_rect
-            rays = get_rays(ngp_pose.cuda(), self.intrinsics, self.H, self.W, -1, rect=lip_rect)
+        if self.training and self.finetune_lip_flag:
+            # the finetune_lip_flag is controlled by the task that use this dataset 
+            rays = get_rays(ngp_pose.cuda(), self.intrinsics, self.H, self.W, N=-1, rect=sample['lip_rect'])
         else:
-            rays = get_rays(ngp_pose.cuda(), self.intrinsics, self.H, self.W, self.num_rays, 1)
+            rays = get_rays(ngp_pose.cuda(), self.intrinsics, self.H, self.W, N=self.num_rays)
         sample['rays_o'] = rays['rays_o']
         sample['rays_d'] = rays['rays_d']
 

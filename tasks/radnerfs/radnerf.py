@@ -27,9 +27,8 @@ class RADNeRFTask(BaseTask):
         self.train_dataset = self.dataset_cls(prefix='train', training=True)
         self.val_dataset = self.dataset_cls(prefix='val', training=False)
 
-        self.finetune_lips = hparams['finetune_lips']
         self.criterion_lpips = lpips.LPIPS(net='alex')
-
+        self.finetune_lip_flag = False
 
     def build_model(self):
         self.model = RADNeRF(hparams)
@@ -39,9 +38,9 @@ class RADNeRFTask(BaseTask):
         self.network_params = [p for k, p in self.model.named_parameters() if (p.requires_grad and 'position_embedder' not in k and 'ambient_embedder' not in k and 'cond_att_net' not in k)]
         self.att_net_params = [p for k, p in self.model.named_parameters() if p.requires_grad and 'cond_att_net' in k]
         
-        if hparams['cuda_ray']:
-            self.model.mark_untrained_grid(self.train_dataset.poses, self.train_dataset.intrinsics)
-            self.model.conds = self.train_dataset.conds
+        self.model.conds = self.train_dataset.conds
+        self.model.mark_untrained_grid(self.train_dataset.poses, self.train_dataset.intrinsics)
+
         return self.model
 
     def on_train_start(self):
@@ -53,16 +52,19 @@ class RADNeRFTask(BaseTask):
         self.optimizer = torch.optim.Adam(
             self.network_params,
             lr=hparams['lr'],
-            betas=(hparams['optimizer_adam_beta1'], hparams['optimizer_adam_beta2']))
+            betas=(hparams['optimizer_adam_beta1'], hparams['optimizer_adam_beta2']),
+            eps=1e-15)
         self.optimizer.add_param_group({
             'params': self.embedders_params,
             'lr': hparams['lr'] * 10,
-            'betas': (hparams['optimizer_adam_beta1'], hparams['optimizer_adam_beta2'])
+            'betas': (hparams['optimizer_adam_beta1'], hparams['optimizer_adam_beta2']),
+            'eps': 1e-15
         })
         self.optimizer.add_param_group({
             'params': self.att_net_params,
             'lr': hparams['lr'] * 5,
-            'betas': (hparams['optimizer_adam_beta1'], hparams['optimizer_adam_beta2'])
+            'betas': (hparams['optimizer_adam_beta1'], hparams['optimizer_adam_beta2']),
+            'eps': 1e-15
         })
         return self.optimizer
 
@@ -120,46 +122,49 @@ class RADNeRFTask(BaseTask):
         H, W = sample['H'], sample['W']
 
         cond_inp = cond_wins if hparams['with_att'] else cond
+        start_finetune_lip = hparams['finetune_lips'] and self.global_step > hparams['finetune_lips_start_iter']
+
+        model_out = self.model.render(rays_o, rays_d, cond_inp, bg_coords, poses, index=idx, staged=False, bg_color=bg_color, perturb=not infer, force_all_rays=infer, **hparams)
+        pred_rgb = model_out['image']
+        losses_out = {}
+        losses_out['mse_loss'] = torch.mean((pred_rgb - gt_rgb) ** 2) # [B, N, 3] --> [B, N]
 
         if not infer:
-            # training forward
-            model_out = self.model.render(rays_o, rays_d, cond_inp, bg_coords, poses, index=idx, staged=False, bg_color=bg_color, perturb=True, force_all_rays=False, max_steps=hparams['max_steps'])
-            pred_rgb = model_out['image']
-            losses_out = {}
-            losses_out['mse_loss'] = torch.mean((pred_rgb - gt_rgb) ** 2) # [B, N, 3] --> [B, N]
             alphas = model_out['weights_sum'].clamp(1e-5, 1 - 1e-5)
             losses_out['weights_entropy_loss'] = torch.mean(- alphas * torch.log2(alphas) - (1 - alphas) * torch.log2(1 - alphas))
             ambient = model_out['ambient'] # [N], abs sum
             losses_out['ambient_loss'] = (ambient * (~face_mask.view(-1))).mean()
 
-            if hparams['finetune_lips'] and self.global_step > hparams['finetune_lips_start_iter']:
-                xmin, xmax, ymin, ymax = sample['lip_rect']
+        if infer or (start_finetune_lip and self.finetune_lip_flag):
+            xmin, xmax, ymin, ymax = sample['lip_rect']
+            if infer:
+                # clip lip part from the whole image
+                gt_rgb = gt_rgb.view(-1, H, W, 3)[:,xmin:xmax,ymin:ymax,:].permute(0, 3, 1, 2).contiguous()
+                pred_rgb = pred_rgb.view(-1, H, W, 3)[:,xmin:xmax,ymin:ymax,:].permute(0, 3, 1, 2).contiguous()
+            else:
+                # during the training phase of finetuning lip, all rays are from lip part
                 gt_rgb = gt_rgb.view(-1, xmax - xmin, ymax - ymin, 3).permute(0, 3, 1, 2).contiguous()
                 pred_rgb = pred_rgb.view(-1, xmax - xmin, ymax - ymin, 3).permute(0, 3, 1, 2).contiguous()
-                losses_out['lpips_loss'] = self.criterion_lpips(pred_rgb, gt_rgb).mean()
-            if self.finetune_lips:
-                # flip in each iteration, to prevent forgetting other parts.
-                hparams['finetune_lips'] = not hparams['finetune_lips']
-            return losses_out, model_out
-        else:
-            model_out = self.model.render(rays_o, rays_d, cond_inp, bg_coords, poses, index=idx, staged=False, bg_color=bg_color, perturb=False, force_all_rays=True)
-            pred_rgb = model_out['image'].reshape(H, W, 3)
-            pred_depth = model_out['depth'].reshape(H, W)
-            outputs = {
-                "image": pred_rgb,
-                "depth": pred_depth
-            }
-            return outputs
+            losses_out['lpips_loss'] = self.criterion_lpips(pred_rgb, gt_rgb).mean()
+        
+        if start_finetune_lip and not infer:
+            # during training, flip in each iteration, to prevent forgetting other facial parts.
+            self.finetune_lip_flag = not self.finetune_lip_flag
+            self.train_dataset.finetune_lip_flag = self.finetune_lip_flag
+        return losses_out, model_out
 
     ##########################
     # training 
     ##########################
     def _training_step(self, sample, batch_idx, optimizer_idx):
+        outputs = {}
         self.train_dataset.global_step = self.global_step
         if self.global_step % hparams['update_extra_interval'] == 0:
-            if not (self.finetune_lips and self.global_step >= hparams['finetune_lips_start_iter']):
-                with torch.cuda.amp.autocast(enabled=hparams['amp']):
-                    self.model.update_extra_state()
+            start_finetune_lips = hparams['finetune_lips'] and self.global_step > hparams['finetune_lips_start_iter']
+            if not start_finetune_lips:
+                # when finetuning lips, we don't update the density grid and bitfield.
+                density_grid_info = self.model.update_extra_state()
+                outputs.update(density_grid_info)
         loss_output, model_out = self.run_model(sample)
         loss_weights = {
             'mse_loss': 1.0,
@@ -170,15 +175,20 @@ class RADNeRFTask(BaseTask):
         total_loss = sum([loss_weights.get(k, 1) * v for k, v in loss_output.items() if isinstance(v, torch.Tensor) and v.requires_grad])
         def mse2psnr(x): return -10. * torch.log(x) / torch.log(torch.Tensor([10.])).to(x.device)
         loss_output['head_psnr'] = mse2psnr(loss_output['mse_loss'].detach())
-        return total_loss, loss_output
+        outputs.update(loss_output)
+        return total_loss, outputs
     
     def on_before_optimization(self, opt_idx):
         prefix = f"grad_norm_opt_idx_{opt_idx}"
         grad_norm_dict = {
-            f'{prefix}/cond_att': get_grad_norm(self.model.att_net_params),
+            f'{prefix}/cond_att': get_grad_norm(self.att_net_params),
             f'{prefix}/embedders_params': get_grad_norm(self.embedders_params),
             f'{prefix}/network_params': get_grad_norm(self.network_params ),
         }
+        if self.gradient_clip_norm > 0:
+            torch.nn.utils.clip_grad_norm_(self.parameters(), self.gradient_clip_norm)
+        if self.gradient_clip_val > 0:
+            torch.nn.utils.clip_grad_value_(self.parameters(), self.gradient_clip_val)
         return grad_norm_dict
         
     def on_after_optimization(self, epoch, batch_idx, optimizer, optimizer_idx):
@@ -198,12 +208,8 @@ class RADNeRFTask(BaseTask):
     def validation_step(self, sample, batch_idx):
         outputs = {}
         outputs['losses'] = {}
-        self.model.train()
-        self.val_dataset.training = True
-        outputs['losses'], model_out = self.run_model(sample, infer=False)
+        outputs['losses'], model_out = self.run_model(sample, infer=True)
         outputs['total_loss'] = sum(outputs['losses'].values())
-        self.model.eval()
-        self.val_dataset.training = False
         outputs['nsamples'] = 1
         outputs = tensors_to_scalars(outputs)
         if self.global_step % hparams['valid_infer_interval'] == 0 \
@@ -212,7 +218,7 @@ class RADNeRFTask(BaseTask):
             interval = (num_val_samples-1) // 4
             idx_lst = [i * interval for i in range(5)]
             sample = move_to_cuda(self.val_dataset[idx_lst[batch_idx]])
-            infer_outputs = self.run_model(sample, infer=True)
+            _, infer_outputs = self.run_model(sample, infer=True)
             rgb_pred = infer_outputs['image']
             depth_pred = infer_outputs['depth']
             H, W = sample['H'], sample['W']

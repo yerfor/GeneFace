@@ -61,15 +61,15 @@ update_extra_interval: 16 # iter interval to update extra status (only valid whe
 max_ray_batch: 4096 # batch size of rays at inference to avoid OOM (only valid when NOT using --cuda_ray)
 
 finetune_lips: true
-finetune_lips_start_iter: 200000
+finetune_lips_start_iter: 20_0000
 lambda_lpips_loss: 0.01 # auxiliary loss for finetune lips
 lambda_weights_entropy: 0.0001
 lambda_ambient: 0.1
 
 min_near: 0.05 # minimum near distance for camera
 bound: 1 # assume the scene is bounded in box[-bound, bound]^3, if > 1, will invoke adaptive ray marching.
-scale: 4 # scale camera location into box[-bound, bound]^3
-offset: [0, 0, 0] # offset of camera location
+camera_scale: 4 # scale camera location into box[-bound, bound]^3
+camera_offset: [0, 0, 0] # offset of camera location
 dt_gamma: 0.00390625 # default 1/256, dt_gamma (>=0) for adaptive ray marching. set to 0 to disable, >0 to accelerate rendering (but usually with worse quality)
 density_thresh: 10 # threshold for density grid to be occupied (sigma)
 
