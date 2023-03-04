@@ -163,8 +163,7 @@ class RADNeRFTask(BaseTask):
             start_finetune_lips = hparams['finetune_lips'] and self.global_step > hparams['finetune_lips_start_iter']
             if not start_finetune_lips:
                 # when finetuning lips, we don't update the density grid and bitfield.
-                density_grid_info = self.model.update_extra_state()
-                outputs.update(density_grid_info)
+                self.model.update_extra_state()
 
         loss_output, model_out = self.run_model(sample)
         loss_weights = {
