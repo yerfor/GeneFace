@@ -183,7 +183,7 @@ class RADNeRFTask(BaseTask):
                 "density_grid_info/max_density": self.model.density_grid.max().item(),
                 "density_grid_info/mean_density": self.model.mean_density,
                 # "density_grid_info/occupancy_rate": (self.model.density_grid > 0.01).sum() / (128**3 * self.model.cascade), 
-                "density_grid_info/occupancy_rate": (self.density_grid > min(self.model.mean_density, self.model.density_thresh)).sum() / (128**3 * self.cascade), 
+                "density_grid_info/occupancy_rate": (self.model.density_grid > min(self.model.mean_density, self.model.density_thresh)).sum() / (128**3 * self.model.cascade), 
                 "density_grid_info/step_mean_count": self.model.mean_count
             }
             outputs.update(density_grid_info)
