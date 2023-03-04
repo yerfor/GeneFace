@@ -15,9 +15,9 @@ export VIDEO_ID=May
 CUDA_VISIBLE_DEVICES=0 data_gen/nerf/process_data.sh $VIDEO_ID
 ```
 
-## 步骤2. 从视频中提取HuBERT和3DMM特征
+## 步骤2. 从视频中提取3DMM特征
 
-这两个特征是训练postnet所必须的。
+这个特征是训练postnet和NeRF所必须的。
 运行如下命令行：
 
 ```
@@ -25,7 +25,6 @@ conda activate process_lrs3
 export PYTHONPATH=./
 export VIDEO_ID=May
 CUDA_VISIBLE_DEVICES=0 python data_gen/nerf/extract_3dmm.py --video_id=$VIDEO_ID
-CUDA_VISIBLE_DEVICES=0 python data_gen/nerf/extract_hubert.py --video_id=$VIDEO_ID
 ```
 
 ## 步骤3. 将处理好的训练数据打包

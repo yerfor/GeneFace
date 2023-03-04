@@ -13,11 +13,15 @@ def get_hubert_from_16k_wav(wav_16k_name):
     speech_16k, _ = sf.read(wav_16k_name)
     hubert = get_hubert_from_16k_speech(speech_16k)
     return hubert
-    
-def get_hubert_from_16k_speech(speech):
+
+@torch.no_grad()
+def get_hubert_from_16k_speech(speech, device="cuda:0"):
+    global hubert_model
+    hubert_model = hubert_model.to(device)
     if speech.ndim ==2:
         speech = speech[:, 0] # [T, 2] ==> [T,]
     input_values_all = wav2vec2_processor(speech, return_tensors="pt", sampling_rate=16000).input_values # [1, T]
+    input_values_all = input_values_all.to(device)
     # For long audio sequence, due to the memory limitation, we cannot process them in one run
     # HuBERT process the wav with a CNN of stride [5,2,2,2,2,2], making a stride of 320
     # Besides, the kernel is [10,3,3,3,3,2,2], making 400 a fundamental unit to get 1 time step.
@@ -48,7 +52,7 @@ def get_hubert_from_16k_speech(speech):
     if input_values.shape[1] != 0:
         hidden_states = hubert_model(input_values).last_hidden_state # [B=1, T=pts//320, hid=1024]
         res_lst.append(hidden_states[0])
-    ret = torch.cat(res_lst, dim=0)
+    ret = torch.cat(res_lst, dim=0).cpu()
     assert ret.shape[0] == expected_T
     return ret
 
