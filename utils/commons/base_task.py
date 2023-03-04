@@ -83,7 +83,7 @@ class BaseTask(nn.Module):
         self.training_losses_meter = {'total_loss': AvgrageMeter()}
 
     def on_epoch_end(self):
-        loss_outputs = {k: round(v.avg, 4) for k, v in self.training_losses_meter.items()}
+        loss_outputs = {k: v.avg for k, v in self.training_losses_meter.items()}
         print(f"Epoch {self.current_epoch} ended. Steps: {self.global_step}. {loss_outputs}")
         loss_outputs = {"epoch_mean/"+k:v for k,v in loss_outputs.items()}
         return loss_outputs
@@ -105,12 +105,19 @@ class BaseTask(nn.Module):
         :param optimizer_idx:
         :return: {'loss': torch.Tensor, 'progress_bar': dict, 'tb_log': dict}
         """
+        # perform the main training step in a specific task
         loss_ret = self._training_step(sample, batch_idx, optimizer_idx)
         if loss_ret is None:
             return {'loss': None}
         total_loss, log_outputs = loss_ret
         log_outputs = tensors_to_scalars(log_outputs)
+
+        # add to epoch meter
         for k, v in log_outputs.items():
+            if '/' in k:
+                k_split = k.split("/")
+                assert len(k_split) == 2, "we only support one `/` in tag_name, i.e., `<tag>/<sub_tag>`"
+                k = k_split[-1]
             if k not in self.training_losses_meter:
                 self.training_losses_meter[k] = AvgrageMeter()
             if not np.isnan(v):
@@ -120,8 +127,23 @@ class BaseTask(nn.Module):
         if optimizer_idx >= 0:
             log_outputs[f'lr_{optimizer_idx}'] = self.trainer.optimizers[optimizer_idx].param_groups[0]['lr']
 
-        progress_bar_log = log_outputs
-        tb_log = {f'tr/{k}': v for k, v in log_outputs.items()}
+        # add to progress bar
+        progress_bar_log = {}
+        for k, v in log_outputs.items():
+            if '/' in k:
+                k_split = k.split("/")
+                assert len(k_split) == 2, "we only support one `/` in tag_name, i.e., `<tag>/<sub_tag>`"
+                k = k_split[-1]
+            assert k not in progress_bar_log, f"we got duplicate tags in log_outputs, check this `{k}`"
+            progress_bar_log[k] = v
+
+        # add to progress bar
+        tb_log = {}
+        for k, v in log_outputs.items():
+            if '/' in k:
+                tb_log[k] = v
+            else:
+                tb_log[f'tr/{k}'] = v
         return {
             'loss': total_loss,
             'progress_bar': progress_bar_log,
