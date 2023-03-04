@@ -177,7 +177,7 @@ class RADNeRFTask(BaseTask):
         loss_output['head_psnr'] = mse2psnr(loss_output['mse_loss'].detach())
         outputs.update(loss_output)
 
-        if self.global_step % hparams['tb_log_interval'] == 0:
+        if (self.global_step+1) % hparams['tb_log_interval'] == 0:
             density_grid_info = {
                 "density_grid_info/min_density": self.model.density_grid.min().item(),
                 "density_grid_info/max_density": self.model.density_grid.max().item(),
