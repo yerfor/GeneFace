@@ -65,7 +65,7 @@ class NeRFRenderer(nn.Module):
         super().__init__()
         self.bound = hparams['bound']
         self.cascade = 1 + math.ceil(math.log2(hparams['bound']))
-        self.grid_size = 128
+        self.grid_size = hparams['grid_size']
         self.density_scale = 1
 
         self.min_near = hparams['min_near']

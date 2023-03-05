@@ -35,13 +35,13 @@ class RADNeRF(NeRFRenderer):
         # a ambient network that predict the 2D ambient coordinate
         # the ambient grid models the dynamic of canonical face
         # by predict ambient coords given cond_feat, we can be driven the face by either audio or landmark!
-        self.position_embedder, self.position_embedding_dim = get_encoder('tiledgrid', input_dim=3, num_levels=16, level_dim=2, base_resolution=16, log2_hashmap_size=16, desired_resolution=2048 * self.bound)
+        self.position_embedder, self.position_embedding_dim = get_encoder('tiledgrid', input_dim=3, num_levels=16, level_dim=2, base_resolution=16, log2_hashmap_size=hparams['log2_hashmap_size'], desired_resolution=hparams['desired_resolution'] * self.bound)
         self.num_layers_ambient = hparams['num_layers_ambient']
         self.hidden_dim_ambient = hparams['hidden_dim_ambient']
         self.ambient_out_dim = hparams['ambient_out_dim']
         self.ambient_net = MLP(self.position_embedding_dim + self.cond_out_dim, self.ambient_out_dim, self.hidden_dim_ambient, self.num_layers_ambient)
         # the learnable ambient grid
-        self.ambient_embedder, self.ambient_embedding_dim = get_encoder('tiledgrid', input_dim=hparams['ambient_out_dim'], num_levels=16, level_dim=2, base_resolution=16, log2_hashmap_size=16, desired_resolution=2048)
+        self.ambient_embedder, self.ambient_embedding_dim = get_encoder('tiledgrid', input_dim=hparams['ambient_out_dim'], num_levels=16, level_dim=2, base_resolution=16, log2_hashmap_size=hparams['log2_hashmap_size'], desired_resolution=hparams['desired_resolution'])
 
         # sigma network
         self.num_layers_sigma = hparams['num_layers_sigma']
