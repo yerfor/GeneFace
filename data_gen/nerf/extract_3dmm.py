@@ -108,7 +108,7 @@ def split_wav(mp4_name):
 if __name__ == '__main__':
     from argparse import ArgumentParser
     parser = ArgumentParser()
-    parser.add_argument('--video_id', type=str, default='Yixing', help='')
+    parser.add_argument('--video_id', type=str, default='May', help='')
     args = parser.parse_args()
 
     video_id = args.video_id
