@@ -15,10 +15,10 @@ set_hparams()
 
 face3d_helper = Face3DHelper()
 
-audio_cond_win_size = 16
-audio_smo_win_size = 8
-exp_cond_win_size = hparams['cond_win_size']
-exp_smo_win_size = hparams['smo_win_size']
+audio_cond_win_size = 16 # hparams['cond_win_size'] for ad_nerf/radnerf
+audio_smo_win_size = 8 # hparams['smo_win_size'] for ad_nerf/radnerf
+exp_cond_win_size = 1 # hparams['cond_win_size'] for lm3d_nerf/lm3d_radnerf
+exp_smo_win_size = 5 # hparams['smo_win_size'] for lm3d_nerf/lm3d_radnerf
 
 
 def get_win_conds(conds, idx, smo_win_size=8, pad_option='zero'):
