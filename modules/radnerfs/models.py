@@ -16,7 +16,7 @@ class RADNeRF(NeRFRenderer):
             self.cond_in_dim = 44
         elif hparams['cond_type'] == 'deepspeech':
             self.cond_in_dim = 29
-        elif hparams['cond_type'] == 'idexp_lm3d':
+        elif hparams['cond_type'] == 'idexp_lm3d_normalized':
             self.cond_in_dim = 68*3
         else:
             raise NotImplementedError()      

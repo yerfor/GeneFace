@@ -47,7 +47,7 @@ class RADNeRFDataset(torch.utils.data.Dataset):
         elif self.cond_type == 'esperanto':
             self.conds = torch.stack([s['esperanto_win'] for s in self.samples]) # [B=1, T=16, C=44]
         elif self.cond_type == 'idexp_lm3d_normalized':
-            self.conds = torch.stack([s['idexp_lm3d_normalized_win'] for s in self.samples]) # [B=1, T=1, C=204]
+            self.conds = torch.stack([s['idexp_lm3d_normalized_win'].reshape([hparams['cond_win_size'], 204]) for s in self.samples]) # [B=1, T=1, C=204]
         else:
             raise NotImplementedError
         

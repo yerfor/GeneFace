@@ -136,9 +136,9 @@ class ExponentialScheduleForRADNeRF(NoneSchedule):
             self.lr = max(constant_lr * warmup, 1e-7)
         else:
             if self.finetune_lips and num_updates > self.finetune_lips_start_iter:
-                new_lrate = constant_lr * (0.05 ** (num_updates / 200_000)) # decay by 0.05x for every 250k steps
+                new_lrate = constant_lr * (0.1 ** (num_updates / 250_000)) # decay by 0.05x for every 200k steps
             else:
-                new_lrate = constant_lr * (0.1 ** (num_updates / 200_000)) # decay by 0.1x for every 250k steps
+                new_lrate = constant_lr * (0.1 ** (num_updates / 250_000)) # decay by 0.1x for every 200k steps
 
             self.lr = max(new_lrate, 1e-7)
 
@@ -147,6 +147,7 @@ class ExponentialScheduleForRADNeRF(NoneSchedule):
         self.optimizer.param_groups[2]['lr'] = self.lr * 5
         return self.lr
     
+
 class CosineSchedule(NoneSchedule):
     def __init__(self, optimizer, lr, warmup_updates, total_updates):
         self.optimizer = optimizer

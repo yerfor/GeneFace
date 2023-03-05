@@ -14,7 +14,7 @@ class AudioNet(nn.Module):
             strides = [2,1,1,1]
         elif win_size in [3, 4]:
             strides = [2,2,1,1]
-        elif win_size == [5, 8]:
+        elif win_size in [5, 8]:
             strides = [2,2,2,1]
         elif win_size == 16:
             strides = [2,2,2,2]

@@ -109,7 +109,6 @@ class RADNeRFTask(BaseTask):
             if infer:
                 return model_out
         """
-        cond = sample['cond_win'] if hparams['use_window_cond'] else sample['cond']
         cond_wins = sample['cond_wins']
         rays_o = sample['rays_o'] # [B, N, 3]
         rays_d = sample['rays_d'] # [B, N, 3]
@@ -121,7 +120,7 @@ class RADNeRFTask(BaseTask):
         bg_color = sample['bg_img']
         H, W = sample['H'], sample['W']
 
-        cond_inp = cond_wins if hparams['with_att'] else cond
+        cond_inp = cond_wins
         start_finetune_lip = hparams['finetune_lips'] and self.global_step > hparams['finetune_lips_start_iter']
 
         model_out = self.model.render(rays_o, rays_d, cond_inp, bg_coords, poses, index=idx, staged=False, bg_color=bg_color, perturb=not infer, force_all_rays=infer, **hparams)
