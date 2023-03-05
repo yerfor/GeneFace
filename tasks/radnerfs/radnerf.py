@@ -4,6 +4,7 @@ import numpy as np
 import os
 import cv2
 import lpips
+import matplotlib.pyplot as plt
 
 from modules.radnerfs.models import RADNeRF
 
@@ -236,11 +237,16 @@ class RADNeRFTask(BaseTask):
             depth_pred = depth_pred.reshape([H, W])
             gen_dir = self.gen_dir
             base_fn = f"frame_{sample['idx']}"
+
+            self.logger.add_figure(f"frame_{sample['idx']}/img_pred", self.rgb_to_figure(img_pred), self.global_step)
+            self.logger.add_figure(f"frame_{sample['idx']}/depth_pred", self.rgb_to_figure(depth_pred), self.global_step)
+
             self.save_rgb_to_fname(img_pred, f"{gen_dir}/images/{base_fn}.png")
             self.save_rgb_to_fname(depth_pred, f"{gen_dir}/depth/{base_fn}.png")
             target = sample['gt_img']
             img_gt = target.reshape([H, W, 3])
             if hparams['save_gt']:
+                self.logger.add_figure(f"frame_{sample['idx']}/img_gt", self.rgb_to_figure(img_gt), self.global_step)
                 base_fn = f"frame_{sample['idx']}_gt"
                 self.save_rgb_to_fname(img_gt, f"{gen_dir}/images/{base_fn}.png")
         return outputs
@@ -282,6 +288,13 @@ class RADNeRFTask(BaseTask):
     #####################
     # Visualization utils
     #####################
+    @staticmethod
+    def rgb_to_figure(rgb):
+        fig = plt.figure(figsize=(12, 6))
+        rgb = convert_to_np(rgb * 255.).astype(np.uint8)
+        plt.imshow(rgb)
+        return fig
+    
     @staticmethod
     def save_rgb_to_fname(rgb, fname):
         rgb = convert_to_np(rgb * 255.).astype(np.uint8)
