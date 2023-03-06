@@ -58,13 +58,14 @@ class LM3dNeRFInfer(BaseNeRFInfer):
         idexp_lm3d_normalized = (idexp_lm3d.reshape([-1,68,3]) - idexp_lm3d_mean)/idexp_lm3d_std
 
         # step1. clamp the lm3d, to regularize apparent outliers
-        idexp_lm3d_normalized[:,0:17] = torch.clamp(idexp_lm3d_normalized[:,0:17], -2, 2) # yaw_x_y_z
-        idexp_lm3d_normalized[:,17:27,0:2] = torch.clamp(idexp_lm3d_normalized[:,17:27,0:2], -1, 1) # brow_x_y
-        idexp_lm3d_normalized[:,17:27,2] = torch.clamp(idexp_lm3d_normalized[:,17:27,2], -2, 2) # brow_z
-        idexp_lm3d_normalized[:,27:36] = torch.clamp(idexp_lm3d_normalized[:,27:36], -2, 2) # nose
-        idexp_lm3d_normalized[:,36:48,0:2] = torch.clamp(idexp_lm3d_normalized[:,36:48,0:2], -1, 1) # eye_x_y
-        idexp_lm3d_normalized[:,36:48,2] = torch.clamp(idexp_lm3d_normalized[:,36:48,2], -2, 2) # eye_z
-        idexp_lm3d_normalized[:,48:68] = torch.clamp(idexp_lm3d_normalized[:,48:68], -2, 2) # mouth
+        lm3d_clamp_std = hparams['infer_lm3d_clamp_std']
+        idexp_lm3d_normalized[:,0:17] = torch.clamp(idexp_lm3d_normalized[:,0:17], -lm3d_clamp_std, lm3d_smooth_sigma) # yaw_x_y_z
+        idexp_lm3d_normalized[:,17:27,0:2] = torch.clamp(idexp_lm3d_normalized[:,17:27,0:2], -lm3d_smooth_sigma/2, lm3d_smooth_sigma/2) # brow_x_y
+        idexp_lm3d_normalized[:,17:27,2] = torch.clamp(idexp_lm3d_normalized[:,17:27,2], -lm3d_clamp_std, lm3d_clamp_std) # brow_z
+        idexp_lm3d_normalized[:,27:36] = torch.clamp(idexp_lm3d_normalized[:,27:36], -lm3d_clamp_std, lm3d_clamp_std) # nose
+        idexp_lm3d_normalized[:,36:48,0:2] = torch.clamp(idexp_lm3d_normalized[:,36:48,0:2], -lm3d_clamp_std/2, lm3d_clamp_std/2) # eye_x_y
+        idexp_lm3d_normalized[:,36:48,2] = torch.clamp(idexp_lm3d_normalized[:,36:48,2], -lm3d_clamp_std, lm3d_clamp_std) # eye_z
+        idexp_lm3d_normalized[:,48:68] = torch.clamp(idexp_lm3d_normalized[:,48:68], -lm3d_clamp_std, lm3d_clamp_std) # mouth
         idexp_lm3d_normalized = idexp_lm3d_normalized.reshape([-1,68*3])
 
         # step2. LLE projection to drag the predicted lm3d closer to the GT lm3d
@@ -105,6 +106,7 @@ class LM3dNeRFInfer(BaseNeRFInfer):
             raise NotImplementedError()
 
         # step5. close the mouth in silent frames
+        # todo: remove `infer_sil_ref_frame_idx`, close the mouth using the current frame instead.
         if hparams.get('infer_close_mouth_when_sil', False):
             idexp_lm3d_normalized = idexp_lm3d_normalized.reshape([-1, 68*3])
             mel, energy = get_mel_from_fname(self.wav16k_name, return_energy=True)

@@ -34,7 +34,7 @@ CUDA_VISIBLE_DEVICES=0 python data_gen/nerf/extract_3dmm.py --video_id=$VIDEO_ID
 ```
 conda activate geneface
 export PYTHONPATH=./
-python data_gen/nerf/binarizer.py --config=egs/datasets/videos/May/adnerf.yaml
+python data_gen/nerf/binarizer.py --config=egs/datasets/videos/May/lm3d_nerf.yaml
 
 ```
 
