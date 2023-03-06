@@ -115,43 +115,55 @@ class RADNeRFTask(BaseTask):
         rays_d = sample['rays_d'] # [B, N, 3]
         bg_coords = sample['bg_coords'] # [1, N, 2]
         poses = sample['pose'] # [B, 6]
-        face_mask = sample['face_mask'] # [B, N]
         idx = sample['idx'] # [B]
-        gt_rgb = sample['gt_img']
         bg_color = sample['bg_img']
         H, W = sample['H'], sample['W']
 
         cond_inp = cond_wins
         start_finetune_lip = hparams['finetune_lips'] and self.global_step > hparams['finetune_lips_start_iter']
 
-        model_out = self.model.render(rays_o, rays_d, cond_inp, bg_coords, poses, index=idx, staged=False, bg_color=bg_color, perturb=not infer, force_all_rays=infer, **hparams)
-        pred_rgb = model_out['image']
-        losses_out = {}
-        losses_out['mse_loss'] = torch.mean((pred_rgb - gt_rgb) ** 2) # [B, N, 3] --> [B, N]
-
         if not infer:
-            alphas = model_out['weights_sum'].clamp(1e-5, 1 - 1e-5)
-            losses_out['weights_entropy_loss'] = torch.mean(- alphas * torch.log2(alphas) - (1 - alphas) * torch.log2(1 - alphas))
-            ambient = model_out['ambient'] # [N], abs sum
-            losses_out['ambient_loss'] = (ambient * (~face_mask.view(-1))).mean()
+            # training phase, sample rays from the image
+            model_out = self.model.render(rays_o, rays_d, cond_inp, bg_coords, poses, index=idx, staged=False, bg_color=bg_color, perturb=True, force_all_rays=False, **hparams)
+            pred_rgb = model_out['rgb_map']
 
-        if infer or (start_finetune_lip and self.finetune_lip_flag):
-            xmin, xmax, ymin, ymax = sample['lip_rect']
-            if infer:
-                # clip lip part from the whole image
-                gt_rgb = gt_rgb.view(-1, H, W, 3)[:,xmin:xmax,ymin:ymax,:].permute(0, 3, 1, 2).contiguous()
-                pred_rgb = pred_rgb.view(-1, H, W, 3)[:,xmin:xmax,ymin:ymax,:].permute(0, 3, 1, 2).contiguous()
-            else:
+            losses_out = {}
+            gt_rgb = sample['gt_img']
+            losses_out['mse_loss'] = torch.mean((pred_rgb - gt_rgb) ** 2) # [B, N, 3] -->  scalar
+
+            if self.model.training:
+                alphas = model_out['weights_sum'].clamp(1e-5, 1 - 1e-5)
+                losses_out['weights_entropy_loss'] = torch.mean(- alphas * torch.log2(alphas) - (1 - alphas) * torch.log2(1 - alphas))
+                ambient = model_out['ambient'] # [N], abs sum
+                face_mask = sample['face_mask'] # [B, N]
+                losses_out['ambient_loss'] = (ambient * (~face_mask.view(-1))).mean()
+                
+            if start_finetune_lip and self.finetune_lip_flag:
                 # during the training phase of finetuning lip, all rays are from lip part
                 gt_rgb = gt_rgb.view(-1, xmax - xmin, ymax - ymin, 3).permute(0, 3, 1, 2).contiguous()
                 pred_rgb = pred_rgb.view(-1, xmax - xmin, ymax - ymin, 3).permute(0, 3, 1, 2).contiguous()
-            losses_out['lpips_loss'] = self.criterion_lpips(pred_rgb, gt_rgb).mean()
-        
-        if start_finetune_lip and not infer:
-            # during training, flip in each iteration, to prevent forgetting other facial parts.
-            self.finetune_lip_flag = not self.finetune_lip_flag
-            self.train_dataset.finetune_lip_flag = self.finetune_lip_flag
-        return losses_out, model_out
+                losses_out['lpips_loss'] = self.criterion_lpips(pred_rgb, gt_rgb).mean()
+            
+            if start_finetune_lip:
+                # during training, flip in each iteration, to prevent forgetting other facial parts.
+                self.finetune_lip_flag = not self.finetune_lip_flag
+                self.train_dataset.finetune_lip_flag = self.finetune_lip_flag
+            return losses_out, model_out
+            
+        else:
+            # infer phase, generate the whole image
+            model_out = self.model.render(rays_o, rays_d, cond_inp, bg_coords, poses, index=idx, staged=False, bg_color=bg_color, perturb=False, force_all_rays=True, **hparams)
+            # calculate val loss
+            if 'gt_img' in sample:
+                gt_rgb = sample['gt_img']
+                pred_rgb = model_out['rgb_map']
+                model_out['mse_loss'] = torch.mean((pred_rgb - gt_rgb) ** 2) # [B, N, 3] -->  scalar
+                if 'lip_rect' in sample:
+                    xmin, xmax, ymin, ymax = sample['lip_rect']
+                    gt_rgb = gt_rgb.view(-1, H, W, 3)[:,xmin:xmax,ymin:ymax,:].permute(0, 3, 1, 2).contiguous()
+                    pred_rgb = pred_rgb.view(-1, H, W, 3)[:,xmin:xmax,ymin:ymax,:].permute(0, 3, 1, 2).contiguous()
+                    model_out['lpips_loss'] = self.criterion_lpips(pred_rgb, gt_rgb).mean()
+            return model_out
 
     ##########################
     # training 
@@ -219,7 +231,7 @@ class RADNeRFTask(BaseTask):
     def validation_step(self, sample, batch_idx):
         outputs = {}
         outputs['losses'] = {}
-        outputs['losses'], model_out = self.run_model(sample, infer=True)
+        outputs['losses'], model_out = self.run_model(sample, infer=False)
         outputs['total_loss'] = sum(outputs['losses'].values())
         outputs['nsamples'] = 1
         outputs = tensors_to_scalars(outputs)
@@ -229,26 +241,24 @@ class RADNeRFTask(BaseTask):
             interval = (num_val_samples-1) // 4
             idx_lst = [i * interval for i in range(5)]
             sample = move_to_cuda(self.val_dataset[idx_lst[batch_idx]])
-            _, infer_outputs = self.run_model(sample, infer=True)
-            rgb_pred = infer_outputs['image']
-            depth_pred = infer_outputs['depth']
+            infer_outputs = self.run_model(sample, infer=True)
             H, W = sample['H'], sample['W']
-            img_pred = rgb_pred.reshape([H, W, 3])
-            depth_pred = depth_pred.reshape([H, W])
-            gen_dir = self.gen_dir
+            img_pred = infer_outputs['rgb_map'].reshape([H, W, 3])
+            depth_pred = infer_outputs['depth_map'].reshape([H, W])
+            
             base_fn = f"frame_{sample['idx']}"
-
             self.logger.add_figure(f"frame_{sample['idx']}/img_pred", self.rgb_to_figure(img_pred), self.global_step)
             self.logger.add_figure(f"frame_{sample['idx']}/depth_pred", self.rgb_to_figure(depth_pred), self.global_step)
 
-            self.save_rgb_to_fname(img_pred, f"{gen_dir}/images/{base_fn}.png")
-            self.save_rgb_to_fname(depth_pred, f"{gen_dir}/depth/{base_fn}.png")
-            target = sample['gt_img']
-            img_gt = target.reshape([H, W, 3])
+            self.save_rgb_to_fname(img_pred, f"{self.gen_dir}/images/{base_fn}.png")
+            self.save_rgb_to_fname(depth_pred, f"{self.gen_dir}/depth/{base_fn}.png")
+
             if hparams['save_gt']:
-                self.logger.add_figure(f"frame_{sample['idx']}/img_gt", self.rgb_to_figure(img_gt), self.global_step)
+                img_gt = sample['gt_img'].reshape([H, W, 3])
+                if self.global_step == hparams['valid_infer_interval']:
+                    self.logger.add_figure(f"frame_{sample['idx']}/img_gt", self.rgb_to_figure(img_gt), self.global_step)
                 base_fn = f"frame_{sample['idx']}_gt"
-                self.save_rgb_to_fname(img_gt, f"{gen_dir}/images/{base_fn}.png")
+                self.save_rgb_to_fname(img_gt, f"{self.gen_dir}/images/{base_fn}.png")
         return outputs
 
     def validation_end(self, outputs):

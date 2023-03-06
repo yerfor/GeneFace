@@ -19,3 +19,7 @@ python data_util/process.py --video_id=$1 --task=6
 wait
 # 7. integrate the results into meta
 python data_util/process.py --video_id=$1 --task=9
+# 8. calculate audio features
+python data_gen/nerf/extract_hubert_mel_f0.py --video_id=$1
+# 9. calculate 3DMM (you should run this with `process_lrs3`` python interpreter)
+# CUDA_VISIBLE_DEVICES=0 <process_lrs3_python> data_gen/nerf/extract_3dmm.py --video_id=$VIDEO_ID

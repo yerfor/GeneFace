@@ -238,8 +238,8 @@ class NeRFRenderer(nn.Module):
         depth = torch.clamp(depth - nears, min=0) / (fars - nears)
         depth = depth.view(*prefix)
         
-        results['depth'] = depth
-        results['image'] = image # head_image if train, else com_image
+        results['depth_map'] = depth
+        results['rgb_map'] = image # head_image if train, else com_image
 
         return results
 

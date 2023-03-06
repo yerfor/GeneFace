@@ -1,0 +1,12 @@
+base_config:
+  - egs/egs_bases/radnerf/radnerf.yaml
+
+video_id: Obama # the video file should be located at `data/raw/videos/<video_id>.mp4`
+individual_embedding_num: 10000 # should be equal or larger than the number of frames
+amp: true
+
+# Q: How to adjust bound and scale?
+
+# A: You could start with a large bound (e.g., 16) 
+# or a small scale (e.g., 0.3)
+# to make sure the object falls into the bounding box. 
