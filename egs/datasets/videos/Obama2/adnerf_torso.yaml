@@ -1,0 +1,5 @@
+base_config:
+  - egs/egs_bases/nerf/adnerf_torso.yaml
+
+video_id: Obama2 # the video file should be located at `data/raw/videos/<video_id>.mp4`
+head_model_dir: checkpoints/Obama2/adnerf # the path of the head_nerf model, e.g., `checkpoints/<video_id>/lm3d_nerf`

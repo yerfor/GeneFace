@@ -11,7 +11,7 @@ load_ckpt: ''
 tb_log_interval: 100
 num_ckpt_keep: 1
 val_check_interval: 2000
-valid_infer_interval: 2000
+valid_infer_interval: 10000
 num_sanity_val_steps: 2
 num_valid_plots: 5
 eval_max_batches: 100 # num_test_plots
@@ -60,9 +60,9 @@ update_extra_interval: 16 # iter interval to update extra status (only valid whe
 max_ray_batch: 4096 # batch size of rays at inference to avoid OOM (only valid when NOT using --cuda_ray)
 
 
-max_updates: 50_0000 # 40_0000 for training the whole head, 5_0000 for finetuning the mouth
+max_updates: 25_0000 # 40_0000 for training the whole head, 5_0000 for finetuning the mouth
 finetune_lips: true
-finetune_lips_start_iter: 40_0000
+finetune_lips_start_iter: 20_0000
 lambda_lpips_loss: 0.01 # auxiliary loss for finetune lips
 lambda_weights_entropy: 0.0001
 lambda_ambient: 0.1
@@ -81,13 +81,13 @@ smooth_lips: false
 
 # Network
 num_layers_sigma: 3
-hidden_dim_sigma: 64
-geo_feat_dim: 64 
+hidden_dim_sigma: 128 # 64 by radnerf is too small
+geo_feat_dim: 128 # 64 by radnerf is too small
 num_layers_color: 2
-hidden_dim_color: 64
+hidden_dim_color: 128 # 64 by radnerf is too small
 cond_out_dim: 64
 num_layers_ambient: 3
-hidden_dim_ambient: 64
+hidden_dim_ambient: 128 # 64 by radnerf is too small
 ambient_out_dim: 2
 with_att: true
 individual_embedding_num: 10000
@@ -101,6 +101,7 @@ infer_scale_factor: 1.0
 infer_smo_std: 0.
 infer_audio_source_name: ''
 infer_c2w_name: ''
+infer_lm3d_clamp_std: 2.5
 infer_lm3d_lle_percent: 0. # percent of lle fused feature to compose the processed lm3d
 infer_lm3d_smooth_sigma: 0. # sigma of gaussian kernel to smooth the predicted lm3d
 infer_pose_smooth_sigma: 2.

@@ -1,0 +1,5 @@
+base_config:
+  - egs/egs_bases/nerf/adnerf.yaml
+
+video_id: Obama2 # the video file should be located at `data/raw/videos/<video_id>.mp4`
+
