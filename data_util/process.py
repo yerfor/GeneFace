@@ -397,12 +397,13 @@ if __name__ == '__main__':
     wav_path = os.path.join(processed_dir, 'aud.wav')
     ori_imgs_dir = os.path.join(processed_dir, 'ori_imgs')
     parsing_dir = os.path.join(processed_dir, 'parsing')
+    head_imgs_dir = os.path.join(processed_dir, 'head_imgs')
     gt_imgs_dir = os.path.join(processed_dir, 'gt_imgs')
     torso_imgs_dir = os.path.join(processed_dir, 'torso_imgs')
-    head_imgs_dir = os.path.join(processed_dir, 'head_imgs')
 
     os.makedirs(ori_imgs_dir, exist_ok=True)
     os.makedirs(parsing_dir, exist_ok=True)
+    os.makedirs(head_imgs_dir, exist_ok=True)
     os.makedirs(gt_imgs_dir, exist_ok=True)
     os.makedirs(torso_imgs_dir, exist_ok=True)
 
