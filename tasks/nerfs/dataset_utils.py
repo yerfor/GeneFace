@@ -41,11 +41,11 @@ class NeRFDataset(torch.utils.data.Dataset):
         if hparams.get("load_imgs_to_memory", False):
             if 'head_img' not in self.samples[idx].keys():
                 self.samples[idx]['head_img'] = load_image_as_uint8_tensor(self.samples[idx]['head_img_fname'])
-            if 'com_img' not in self.samples[idx].keys():
-                self.samples[idx]['com_img'] = load_image_as_uint8_tensor(self.samples[idx]['com_img_fname'])
+            if 'gt_img' not in self.samples[idx].keys():
+                self.samples[idx]['gt_img'] = load_image_as_uint8_tensor(self.samples[idx]['gt_img_fname'])
         else:
             raw_sample['head_img'] = load_image_as_uint8_tensor(self.samples[idx]['head_img_fname'])
-            raw_sample['com_img'] = load_image_as_uint8_tensor(self.samples[idx]['com_img_fname'])
+            raw_sample['gt_img'] = load_image_as_uint8_tensor(self.samples[idx]['gt_img_fname'])
 
         sample = {
             'H': self.H,
