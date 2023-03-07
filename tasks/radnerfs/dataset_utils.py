@@ -34,15 +34,15 @@ class RADNeRFDataset(torch.utils.data.Dataset):
         self.cy = ds_dict['cy']
         self.near = hparams['near'] # follow AD-NeRF, we dont use near-far in ds_dict
         self.far = hparams['far'] # follow AD-NeRF, we dont use near-far in ds_dict
-        if hparams['bg_img_fname'] == '':
+        if hparams['infer_bg_img_fname'] == '':
             # use the default bg_img from dataset
             bg_img = torch.from_numpy(ds_dict['bg_img']).float() / 255.
-        elif self.opt.bg_img == 'white': # special
+        elif hparams['infer_bg_img_fname'] == 'white': # special
             bg_img = np.ones((self.H, self.W, 3), dtype=np.float32)
-        elif self.opt.bg_img == 'black': # special
+        elif hparams['infer_bg_img_fname'] == 'black': # special
             bg_img = np.zeros((self.H, self.W, 3), dtype=np.float32)
         else: # load from a specificfile
-            bg_img = cv2.imread(self.opt.bg_img, cv2.IMREAD_UNCHANGED) # [H, W, 3]
+            bg_img = cv2.imread(hparams['infer_bg_img_fname'], cv2.IMREAD_UNCHANGED) # [H, W, 3]
             if bg_img.shape[0] != self.H or bg_img.shape[1] != self.W:
                 bg_img = cv2.resize(bg_img, (self.W, self.H), interpolation=cv2.INTER_AREA)
             bg_img = cv2.cvtColor(bg_img, cv2.COLOR_BGR2RGB)
@@ -157,16 +157,18 @@ class RADNeRFDataset(torch.utils.data.Dataset):
         bg_torso_img = sample['torso_img']
         bg_torso_img = bg_torso_img[..., :3] * bg_torso_img[..., 3:] + self.bg_img * (1 - bg_torso_img[..., 3:])
         bg_torso_img = bg_torso_img.view(1, -1, 3) # treat torso as a part of background
-        bg_img =  self.bg_img.view(1, -1, 3).to(self.device) 
+        bg_img =  self.bg_img.view(1, -1, 3)
         
         C = sample['gt_img'].shape[-1]
         if self.training:
             bg_img = torch.gather(bg_img.cuda(), 1, torch.stack(3 * [rays['inds']], -1)) # [B, N, 3]
             bg_torso_img = torch.gather(bg_torso_img.cuda(), 1, torch.stack(3 * [rays['inds']], -1)) # [B, N, 3]
             gt_img = torch.gather(sample['gt_img'].reshape(1, -1, C).cuda(), 1, torch.stack(C * [rays['inds']], -1)) # [B, N, 3/4]
+            sample['gt_img'] = gt_img
+        else:
+            sample['gt_img'] = sample['gt_img'].reshape([1,-1,C])
         sample['bg_img'] = bg_img
         sample['bg_torso_img'] = bg_torso_img
-        sample['gt_img'] = gt_img
 
         if self.training:
             bg_coords = torch.gather(self.bg_coords.cuda(), 1, torch.stack(2 * [rays['inds']], -1)) # [1, N, 2]

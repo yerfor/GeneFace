@@ -22,14 +22,14 @@ class RADNeRFTorso(RADNeRF):
         self.mean_density_torso = 0
         self.density_thresh_torso = hparams['density_thresh_torso']
 
-        self.pose_embedder, self.pose_embedding_dim = get_encoder('frequency', input_dim=6, multires=4)
-        self.torso_deform_pos_embedder, self.torso_deform_pos_dim = get_encoder('frequency', input_dim=2, multires=10) # input 2D position
-        self.torso_deform_net = MLP(self.torso_deform_pos_dim + self.pose_embedding_dim, self.ambient_out_dim, self.hidden_dim_ambient, self.num_layers_ambient)
-
         self.torso_individual_embedding_num = hparams['individual_embedding_num']
         self.torso_individual_embedding_dim = hparams['torso_individual_embedding_dim']
         if self.torso_individual_embedding_dim > 0:
             self.torso_individual_codes = nn.Parameter(torch.randn(self.torso_individual_embedding_num, self.torso_individual_embedding_dim) * 0.1) 
+        
+        self.pose_embedder, self.pose_embedding_dim = get_encoder('frequency', input_dim=6, multires=4)
+        self.torso_deform_pos_embedder, self.torso_deform_pos_dim = get_encoder('frequency', input_dim=2, multires=10) # input 2D position
+        self.torso_deform_net = MLP(self.torso_deform_pos_dim + self.pose_embedding_dim + self.torso_individual_embedding_dim, 2, 64, 3)
 
         self.torso_embedder, self.torso_in_dim = get_encoder('tiledgrid', input_dim=2, num_levels=16, level_dim=2, base_resolution=16, log2_hashmap_size=16, desired_resolution=2048)
         self.torso_canonicial_net = MLP(self.torso_in_dim + self.torso_deform_pos_dim + self.pose_embedding_dim + self.torso_individual_embedding_dim, 4, 32, 3)
@@ -154,14 +154,14 @@ class RADNeRFTorso(RADNeRF):
         if bg_color is None:
             bg_color = 1
 
-        if self.individual_dim_torso > 0:
+        if self.torso_individual_embedding_dim > 0:
             if self.training:
-                ind_torso_code = self.torso_individual_codes[index]
+                torso_individual_code = self.torso_individual_codes[index]
             # use a fixed ind code for the unknown test data.
             else:
-                ind_torso_code = self.torso_individual_codes[0]
+                torso_individual_code = self.torso_individual_codes[0]
         else:
-            ind_code_torso = None
+            torso_individual_code = None
 
         # 2D density grid for acceleration...
         density_thresh_torso = min(self.density_thresh_torso, self.mean_density_torso)
@@ -173,7 +173,7 @@ class RADNeRFTorso(RADNeRF):
         torso_color = torch.zeros([N, 3], device=device)
 
         if mask.any():
-            torso_alpha_mask, torso_color_mask, deform = self.forward_torso(bg_coords[mask], poses, ind_code_torso)
+            torso_alpha_mask, torso_color_mask, deform = self.forward_torso(bg_coords[mask], poses, torso_individual_code)
 
             torso_alpha[mask] = torso_alpha_mask.float()
             torso_color[mask] = torso_color_mask.float()
@@ -208,8 +208,8 @@ class RADNeRFTorso(RADNeRF):
         rand_idx = random.randint(0, self.poses.shape[0] - 1)
         pose = convert_poses(self.poses[[rand_idx]]).to(self.density_bitfield.device)
 
-        if self.opt.ind_dim_torso > 0:
-            ind_code = self.individual_codes_torso[[rand_idx]]
+        if self.torso_individual_embedding_dim > 0:
+            ind_code = self.torso_individual_codes[[rand_idx]]
         else:
             ind_code = None
 
