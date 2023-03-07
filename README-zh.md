@@ -14,6 +14,7 @@
 
 
 ## 🔥新闻:
+- `2023.3.7` 我们计划于5月1日释出GeneFace的升级版：`GeneFace-S`. 相比起当前版本的GeneFace，升级版能够提供更加准确和稳定的嘴形；训练时间能够缩短4倍；并且能够在RTX2080Ti上实现实时推理（25fps）！欢迎大家保持关注。
 - `2023.2.22` 我们发布了一段一分钟的[Demo视频](https://geneface.github.io/GeneFace/how_i_want_to_say_goodbye.mp4)，在其中GeneFace由[DiffSinger](https://github.com/MoonInTheRiver/DiffSinger)生成的一段中文歌曲所驱动，并能够产生准确的嘴形。
 - `2023.2.20` 我们发布了一个稳定版本的3D landmark后处理逻辑，位于 `inference/ners/lm3d_nerf_infer.py`，它大大提升了最终合成的视频的稳定性和质量。
 
