@@ -126,19 +126,3 @@ class RADNeRF(NeRFRenderer):
             'geo_feat': geo_feat,
         }
 
-    # optimizer utils
-    def get_params_group(self, lr, lr_net, wd=0):
-        params = [
-            {'params': self.cond_prenet.parameters(), 'lr': lr_net, 'weight_decay': wd}, 
-            {'params': self.position_embedder.parameters(), 'lr': lr},
-            {'params': self.ambient_embedder.parameters(), 'lr': lr},
-            {'params': self.ambient_net.parameters(), 'lr': lr_net, 'weight_decay': wd},
-            {'params': self.sigma_net.parameters(), 'lr': lr_net, 'weight_decay': wd},
-            {'params': self.color_net.parameters(), 'lr': lr_net, 'weight_decay': wd}, 
-        ]
-        if self.use_att:
-            params.append({'params': self.cond_att_net.parameters(), 'lr': lr_net * 5, 'weight_decay': wd})
-        if self.individual_embedding_dim > 0:
-            params.append({'params': self.individual_codes, 'lr': lr_net, 'weight_decay': wd})
-
-        return params

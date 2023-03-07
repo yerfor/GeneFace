@@ -130,119 +130,6 @@ class NeRFRenderer(nn.Module):
         self.mean_count = 0
         self.local_step = 0
 
-    def run_cuda(self, rays_o, rays_d, cond, bg_coords, poses, index=0, dt_gamma=0, bg_color=None, perturb=False, force_all_rays=False, max_steps=1024, T_thresh=1e-4, **kwargs):
-        # rays_o, rays_d: [B, N, 3], assumes B == 1
-        # cond: [B, 16]
-        # index: [B]
-        # return: image: [B, N, 3], depth: [B, N]
-
-        prefix = rays_o.shape[:-1]
-        rays_o = rays_o.contiguous().view(-1, 3)
-        rays_d = rays_d.contiguous().view(-1, 3)
-        bg_coords = bg_coords.contiguous().view(-1, 2)
-
-        N = rays_o.shape[0] # N = B * N, in fact
-        device = rays_o.device
-
-        results = {}
-
-        # pre-calculate near far
-        nears, fars = raymarching.near_far_from_aabb(rays_o, rays_d, self.aabb_train if self.training else self.aabb_infer, self.min_near)
-        nears = nears.detach()
-        fars = fars.detach()
-
-        # encode audio
-        cond_feat = self.cal_cond_feat(cond) # [1, 64]
-
-        if cond_feat is not None and self.smooth_lips:
-            if self.cond_feat is not None:
-                _lambda = 0.35
-                cond_feat = _lambda * self.cond_feat + (1 - _lambda) * cond_feat
-            self.cond_feat = cond_feat
-
-        
-        if self.individual_embedding_dim > 0:
-            if self.training:
-                ind_code = self.individual_embeddings[index]
-            # use a fixed ind code for the unknown test data.
-            else:
-                ind_code = self.individual_embeddings[0]
-        else:
-            ind_code = None
-
-        if self.training:
-            # setup counter
-            counter = self.step_counter[self.local_step % 16]
-            counter.zero_() # set to 0
-            self.local_step += 1
-
-            xyzs, dirs, deltas, rays = raymarching.march_rays_train(rays_o, rays_d, self.bound, self.density_bitfield, self.cascade, self.grid_size, nears, fars, counter, self.mean_count, perturb, 128, force_all_rays, dt_gamma, max_steps)
-
-            sigmas, rgbs, ambient = self(xyzs, dirs, cond_feat, ind_code)
-            sigmas = self.density_scale * sigmas
-
-            #print(f'valid RGB query ratio: {mask.sum().item() / mask.shape[0]} (total = {mask.sum().item()})')
-
-            weights_sum, ambient_sum, depth, image = raymarching.composite_rays_train(sigmas, rgbs, ambient.abs().sum(-1), deltas, rays)
-
-            # for training only
-            results['weights_sum'] = weights_sum
-            results['ambient'] = ambient_sum
-        else:
-           
-            dtype = torch.float32
-            
-            weights_sum = torch.zeros(N, dtype=dtype, device=device)
-            depth = torch.zeros(N, dtype=dtype, device=device)
-            image = torch.zeros(N, 3, dtype=dtype, device=device)
-            
-            n_alive = N
-            rays_alive = torch.arange(n_alive, dtype=torch.int32, device=device) # [N]
-            rays_t = nears.clone() # [N]
-
-            step = 0
-            
-            while step < max_steps:
-
-                # count alive rays 
-                n_alive = rays_alive.shape[0]
-                
-                # exit loop
-                if n_alive <= 0:
-                    break
-
-                # decide compact_steps
-                n_step = max(min(N // n_alive, 8), 1)
-
-                xyzs, dirs, deltas = raymarching.march_rays(n_alive, n_step, rays_alive, rays_t, rays_o, rays_d, self.bound, self.density_bitfield, self.cascade, self.grid_size, nears, fars, 128, perturb if step == 0 else False, dt_gamma, max_steps)
-
-                sigmas, rgbs, ambient = self(xyzs, dirs, cond_feat, ind_code)
-                sigmas = self.density_scale * sigmas
-
-                raymarching.composite_rays(n_alive, n_step, rays_alive, rays_t, sigmas, rgbs, deltas, weights_sum, depth, image, T_thresh)
-
-                rays_alive = rays_alive[rays_alive >= 0]
-
-                # print(f'step = {step}, n_step = {n_step}, n_alive = {n_alive}, xyzs: {xyzs.shape}')
-
-                step += n_step
-            
-        # background
-        if bg_color is None:
-            bg_color = 1
-
-        image = image + (1 - weights_sum).unsqueeze(-1) * bg_color
-        image = image.view(*prefix, 3)
-        image = image.clamp(0, 1)
-
-        depth = torch.clamp(depth - nears, min=0) / (fars - nears)
-        depth = depth.view(*prefix)
-        
-        results['depth_map'] = depth
-        results['rgb_map'] = image # head_image if train, else com_image
-
-        return results
-
     @torch.no_grad()
     def mark_untrained_grid(self, poses, intrinsic, S=64):
         # poses: [B, 4, 4]
@@ -378,12 +265,109 @@ class NeRFRenderer(nn.Module):
         self.local_step = 0
 
 
-    def render(self, rays_o, rays_d, cond, bg_coords, poses, staged=False, max_ray_batch=4096, **kwargs):
+    def render(self, rays_o, rays_d, cond, bg_coords, poses, index=0, dt_gamma=0, bg_color=None, perturb=False, force_all_rays=False, max_steps=1024, T_thresh=1e-4, **kwargs):
         # rays_o, rays_d: [B, N, 3], assumes B == 1
         # cond: [B, 29, 16]
         # bg_coords: [1, N, 2]
         # return: pred_rgb: [B, N, 3]
 
-        _run = self.run_cuda
-        results = _run(rays_o, rays_d, cond, bg_coords, poses, **kwargs)
+        prefix = rays_o.shape[:-1]
+        rays_o = rays_o.contiguous().view(-1, 3)
+        rays_d = rays_d.contiguous().view(-1, 3)
+        bg_coords = bg_coords.contiguous().view(-1, 2)
+
+        N = rays_o.shape[0] # N = B * N, in fact
+        device = rays_o.device
+
+        results = {}
+
+        # pre-calculate near far
+        nears, fars = raymarching.near_far_from_aabb(rays_o, rays_d, self.aabb_train if self.training else self.aabb_infer, self.min_near)
+        nears = nears.detach()
+        fars = fars.detach()
+
+        # encode audio
+        cond_feat = self.cal_cond_feat(cond) # [1, 64]
+
+        if self.individual_embedding_dim > 0:
+            if self.training:
+                ind_code = self.individual_embeddings[index]
+            # use a fixed ind code for the unknown test data.
+            else:
+                ind_code = self.individual_embeddings[0]
+        else:
+            ind_code = None
+
+        if self.training:
+            # setup counter
+            counter = self.step_counter[self.local_step % 16]
+            counter.zero_() # set to 0
+            self.local_step += 1
+
+            xyzs, dirs, deltas, rays = raymarching.march_rays_train(rays_o, rays_d, self.bound, self.density_bitfield, self.cascade, self.grid_size, nears, fars, counter, self.mean_count, perturb, 128, force_all_rays, dt_gamma, max_steps)
+
+            sigmas, rgbs, ambient = self(xyzs, dirs, cond_feat, ind_code)
+            sigmas = self.density_scale * sigmas
+
+            #print(f'valid RGB query ratio: {mask.sum().item() / mask.shape[0]} (total = {mask.sum().item()})')
+
+            weights_sum, ambient_sum, depth, image = raymarching.composite_rays_train(sigmas, rgbs, ambient.abs().sum(-1), deltas, rays)
+
+            # for training only
+            results['weights_sum'] = weights_sum
+            results['ambient'] = ambient_sum
+        else:
+           
+            dtype = torch.float32
+            
+            weights_sum = torch.zeros(N, dtype=dtype, device=device)
+            depth = torch.zeros(N, dtype=dtype, device=device)
+            image = torch.zeros(N, 3, dtype=dtype, device=device)
+            
+            n_alive = N
+            rays_alive = torch.arange(n_alive, dtype=torch.int32, device=device) # [N]
+            rays_t = nears.clone() # [N]
+
+            step = 0
+            
+            while step < max_steps:
+
+                # count alive rays 
+                n_alive = rays_alive.shape[0]
+                
+                # exit loop
+                if n_alive <= 0:
+                    break
+
+                # decide compact_steps
+                n_step = max(min(N // n_alive, 8), 1)
+
+                xyzs, dirs, deltas = raymarching.march_rays(n_alive, n_step, rays_alive, rays_t, rays_o, rays_d, self.bound, self.density_bitfield, self.cascade, self.grid_size, nears, fars, 128, perturb if step == 0 else False, dt_gamma, max_steps)
+
+                sigmas, rgbs, ambient = self(xyzs, dirs, cond_feat, ind_code)
+                sigmas = self.density_scale * sigmas
+
+                raymarching.composite_rays(n_alive, n_step, rays_alive, rays_t, sigmas, rgbs, deltas, weights_sum, depth, image, T_thresh)
+
+                rays_alive = rays_alive[rays_alive >= 0]
+
+                # print(f'step = {step}, n_step = {n_step}, n_alive = {n_alive}, xyzs: {xyzs.shape}')
+
+                step += n_step
+            
+        # background
+        if bg_color is None:
+            bg_color = 1
+
+        image = image + (1 - weights_sum).unsqueeze(-1) * bg_color
+        image = image.view(*prefix, 3)
+        image = image.clamp(0, 1)
+
+        depth = torch.clamp(depth - nears, min=0) / (fars - nears)
+        depth = depth.view(*prefix)
+        
+        results['depth_map'] = depth
+        results['rgb_map'] = image # head_image if train, else com_image
+
         return results
+

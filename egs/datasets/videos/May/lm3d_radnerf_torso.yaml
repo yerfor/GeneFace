@@ -1,0 +1,6 @@
+base_config:
+  - egs/egs_bases/radnerf/lm3d_radnerf.yaml
+
+task_cls: tasks.radnerfs.radnerf_torso.RADNeRFTorsoTask
+
+head_model_dir: checkpoints/May/lm3d_radnerf

@@ -141,16 +141,18 @@ class RADNeRFDataset(torch.utils.data.Dataset):
 
         bg_torso_img = sample['torso_img']
         bg_torso_img = bg_torso_img[..., :3] * bg_torso_img[..., 3:] + self.bc_img * (1 - bg_torso_img[..., 3:])
-        bg_torso_img = bg_torso_img.view(1, -1, 3)
-        bg_img = bg_torso_img # treat torso as a part of background
+        bg_torso_img = bg_torso_img.view(1, -1, 3) # treat torso as a part of background
+        bg_img =  self.bg_img.view(1, -1, 3).to(self.device) 
+        
+        C = sample['gt_img'].shape[-1]
         if self.training:
             bg_img = torch.gather(bg_img.cuda(), 1, torch.stack(3 * [rays['inds']], -1)) # [B, N, 3]
+            bg_torso_img = torch.gather(bg_torso_img.cuda(), 1, torch.stack(3 * [rays['inds']], -1)) # [B, N, 3]
+            gt_img = torch.gather(sample['gt_img'].reshape(1, -1, C).cuda(), 1, torch.stack(C * [rays['inds']], -1)) # [B, N, 3/4]
         sample['bg_img'] = bg_img
+        sample['bg_torso_img'] = bg_torso_img
+        sample['gt_img'] = gt_img
 
-        C = sample['gt_img'].shape[-1]
-        gt_img = torch.gather(sample['gt_img'].reshape(1, -1, C).cuda(), 1, torch.stack(C * [rays['inds']], -1)) # [B, N, 3/4]
-        sample['gt_img'] = gt_img.float()
-        
         if self.training:
             bg_coords = torch.gather(self.bg_coords.cuda(), 1, torch.stack(2 * [rays['inds']], -1)) # [1, N, 2]
         else:

@@ -6,7 +6,7 @@ import cv2
 import lpips
 import matplotlib.pyplot as plt
 
-from modules.radnerfs.models import RADNeRF
+from modules.radnerfs.radnerf import RADNeRF
 
 from utils.commons.image_utils import to8b
 from utils.commons.base_task import BaseTask
@@ -116,7 +116,7 @@ class RADNeRFTask(BaseTask):
         bg_coords = sample['bg_coords'] # [1, N, 2]
         poses = sample['pose'] # [B, 6]
         idx = sample['idx'] # [B]
-        bg_color = sample['bg_img']
+        bg_color = sample['bg_torso_img'] # treat torso as a part of background
         H, W = sample['H'], sample['W']
 
         cond_inp = cond_wins
