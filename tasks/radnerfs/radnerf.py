@@ -231,11 +231,13 @@ class RADNeRFTask(BaseTask):
     @torch.no_grad()
     def validation_step(self, sample, batch_idx):
         outputs = {}
+        self.val_dataset.training = True
         outputs['losses'] = {}
         outputs['losses'], model_out = self.run_model(sample, infer=False)
         outputs['total_loss'] = sum(outputs['losses'].values())
         outputs['nsamples'] = 1
         outputs = tensors_to_scalars(outputs)
+        self.val_dataset.training = False
         if self.global_step % hparams['valid_infer_interval'] == 0 \
                 and batch_idx < hparams['num_valid_plots']:
             num_val_samples = len(self.val_dataset)

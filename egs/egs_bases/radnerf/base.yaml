@@ -86,6 +86,7 @@ smooth_lips: false
 # Network
 with_att: true
 use_window_cond: true
+head_aware: true # head aware torso nerf to avoid head-torso separation artifacts!
 num_layers_sigma: 3
 hidden_dim_sigma: 128 # 64 by radnerf is too small
 geo_feat_dim: 128 # 64 by radnerf is too small

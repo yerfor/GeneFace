@@ -65,95 +65,70 @@ class RADNeRFTorso(RADNeRF):
         # cond: [B, 29, 16]
         # bg_coords: [1, N, 2]
         # return: pred_rgb: [B, N, 3]
-
-        prefix = rays_o.shape[:-1]
-        rays_o = rays_o.contiguous().view(-1, 3)
-        rays_d = rays_d.contiguous().view(-1, 3)
-        bg_coords = bg_coords.contiguous().view(-1, 2)
-
-        N = rays_o.shape[0] # N = B * N, in fact
-        device = rays_o.device
-
-        results = {}
-
-        # pre-calculate near far
-        nears, fars = raymarching.near_far_from_aabb(rays_o, rays_d, self.aabb_train if self.training else self.aabb_infer, self.min_near)
-        nears = nears.detach()
-        fars = fars.detach()
-
-        # encode audio
-        cond_feat = self.cal_cond_feat(cond) # [1, 64]
-
-        if self.individual_embedding_dim > 0:
-            if self.training:
-                ind_code = self.individual_embeddings[index]
-            # use a fixed ind code for the unknown test data.
+        with torch.no_grad():
+            prefix = rays_o.shape[:-1]
+            rays_o = rays_o.contiguous().view(-1, 3)
+            rays_d = rays_d.contiguous().view(-1, 3)
+            bg_coords = bg_coords.contiguous().view(-1, 2)
+            N = rays_o.shape[0] # N = B * N, in fact
+            device = rays_o.device
+            results = {}
+            # pre-calculate near far
+            nears, fars = raymarching.near_far_from_aabb(rays_o, rays_d, self.aabb_train if self.training else self.aabb_infer, self.min_near)
+            nears = nears.detach()
+            fars = fars.detach()
+            # encode audio
+            cond_feat = self.cal_cond_feat(cond) # [1, 64]
+            if self.individual_embedding_dim > 0:
+                if self.training:
+                    ind_code = self.individual_embeddings[index]
+                # use a fixed ind code for the unknown test data.
+                else:
+                    ind_code = self.individual_embeddings[0]
             else:
-                ind_code = self.individual_embeddings[0]
-        else:
-            ind_code = None
-
-        if self.training:
-            # setup counter
-            counter = self.step_counter[self.local_step % 16]
-            counter.zero_() # set to 0
-            self.local_step += 1
-
-            xyzs, dirs, deltas, rays = raymarching.march_rays_train(rays_o, rays_d, self.bound, self.density_bitfield, self.cascade, self.grid_size, nears, fars, counter, self.mean_count, perturb, 128, force_all_rays, dt_gamma, max_steps)
-
-            sigmas, rgbs, ambient = self(xyzs, dirs, cond_feat, ind_code)
-            sigmas = self.density_scale * sigmas
-
-            #print(f'valid RGB query ratio: {mask.sum().item() / mask.shape[0]} (total = {mask.sum().item()})')
-
-            weights_sum, ambient_sum, depth, image = raymarching.composite_rays_train(sigmas, rgbs, ambient.abs().sum(-1), deltas, rays)
-
-            # for training only
-            results['weights_sum'] = weights_sum
-            results['ambient'] = ambient_sum
-        else:
-           
-            dtype = torch.float32
-            
-            weights_sum = torch.zeros(N, dtype=dtype, device=device)
-            depth = torch.zeros(N, dtype=dtype, device=device)
-            image = torch.zeros(N, 3, dtype=dtype, device=device)
-            
-            n_alive = N
-            rays_alive = torch.arange(n_alive, dtype=torch.int32, device=device) # [N]
-            rays_t = nears.clone() # [N]
-
-            step = 0
-            
-            while step < max_steps:
-
-                # count alive rays 
-                n_alive = rays_alive.shape[0]
-                
-                # exit loop
-                if n_alive <= 0:
-                    break
-
-                # decide compact_steps
-                n_step = max(min(N // n_alive, 8), 1)
-
-                xyzs, dirs, deltas = raymarching.march_rays(n_alive, n_step, rays_alive, rays_t, rays_o, rays_d, self.bound, self.density_bitfield, self.cascade, self.grid_size, nears, fars, 128, perturb if step == 0 else False, dt_gamma, max_steps)
-
+                ind_code = None
+            if self.training:
+                # setup counter
+                counter = self.step_counter[self.local_step % 16]
+                counter.zero_() # set to 0
+                self.local_step += 1
+                xyzs, dirs, deltas, rays = raymarching.march_rays_train(rays_o, rays_d, self.bound, self.density_bitfield, self.cascade, self.grid_size, nears, fars, counter, self.mean_count, perturb, 128, force_all_rays, dt_gamma, max_steps)
                 sigmas, rgbs, ambient = self(xyzs, dirs, cond_feat, ind_code)
                 sigmas = self.density_scale * sigmas
+                #print(f'valid RGB query ratio: {mask.sum().item() / mask.shape[0]} (total = {mask.sum().item()})')
+                weights_sum, ambient_sum, depth, image = raymarching.composite_rays_train(sigmas, rgbs, ambient.abs().sum(-1), deltas, rays)
+                # for training only
+                results['weights_sum'] = weights_sum
+                results['ambient'] = ambient_sum
+            else:
+                dtype = torch.float32
+                weights_sum = torch.zeros(N, dtype=dtype, device=device)
+                depth = torch.zeros(N, dtype=dtype, device=device)
+                image = torch.zeros(N, 3, dtype=dtype, device=device)
+                n_alive = N
+                rays_alive = torch.arange(n_alive, dtype=torch.int32, device=device) # [N]
+                rays_t = nears.clone() # [N]
+                step = 0
+                while step < max_steps:
+                    # count alive rays 
+                    n_alive = rays_alive.shape[0]
+                    # exit loop
+                    if n_alive <= 0:
+                        break
+                    # decide compact_steps
+                    n_step = max(min(N // n_alive, 8), 1)
+                    xyzs, dirs, deltas = raymarching.march_rays(n_alive, n_step, rays_alive, rays_t, rays_o, rays_d, self.bound, self.density_bitfield, self.cascade, self.grid_size, nears, fars, 128, perturb if step == 0 else False, dt_gamma, max_steps)
+                    sigmas, rgbs, ambient = self(xyzs, dirs, cond_feat, ind_code)
+                    sigmas = self.density_scale * sigmas
+                    raymarching.composite_rays(n_alive, n_step, rays_alive, rays_t, sigmas, rgbs, deltas, weights_sum, depth, image, T_thresh)
+                    rays_alive = rays_alive[rays_alive >= 0]
+                    step += n_step
+            # background
+            if bg_color is None:
+                bg_color = 1
 
-                raymarching.composite_rays(n_alive, n_step, rays_alive, rays_t, sigmas, rgbs, deltas, weights_sum, depth, image, T_thresh)
 
-                rays_alive = rays_alive[rays_alive >= 0]
-
-                # print(f'step = {step}, n_step = {n_step}, n_alive = {n_alive}, xyzs: {xyzs.shape}')
-
-                step += n_step
-            
-        # background
-        if bg_color is None:
-            bg_color = 1
-
+        ### Start Rendering Torso
         if self.torso_individual_embedding_dim > 0:
             if self.training:
                 torso_individual_code = self.torso_individual_codes[index]
@@ -174,26 +149,19 @@ class RADNeRFTorso(RADNeRF):
 
         if mask.any():
             torso_alpha_mask, torso_color_mask, deform = self.forward_torso(bg_coords[mask], poses, torso_individual_code)
-
             torso_alpha[mask] = torso_alpha_mask.float()
             torso_color[mask] = torso_color_mask.float()
-
             results['deform'] = deform
-
         # first mix torso with background
         bg_color = torso_color * torso_alpha + bg_color * (1 - torso_alpha)
-
         results['torso_alpha_map'] = torso_alpha
         results['torso_rgb_map'] = bg_color
-
         # then mix the head image with the torso_bg
         image = image + (1 - weights_sum).unsqueeze(-1) * bg_color
         image = image.view(*prefix, 3)
         image = image.clamp(0, 1)
-
         depth = torch.clamp(depth - nears, min=0) / (fars - nears)
         depth = depth.view(*prefix)
-        
         results['depth_map'] = depth
         results['rgb_map'] = image # head_image if train, else com_image
 
