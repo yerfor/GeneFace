@@ -30,7 +30,7 @@ class NeRFDataset(torch.utils.data.Dataset):
         self.cy = ds_dict['cy']
         self.near = hparams['near'] # follow AD-NeRF, we dont use near-far in ds_dict
         self.far = hparams['far'] # follow AD-NeRF, we dont use near-far in ds_dict
-        self.bc_img = torch.from_numpy(ds_dict['bc_img']).float() / 255.
+        self.bg_img = torch.from_numpy(ds_dict['bg_img']).float() / 255.
         self.idexp_lm3d_mean = torch.from_numpy(ds_dict['idexp_lm3d_mean']).float()
         self.idexp_lm3d_std = torch.from_numpy(ds_dict['idexp_lm3d_std']).float()
         self.max_t = len(ds_dict['train_samples']) + len(ds_dict['val_samples'])
@@ -57,7 +57,7 @@ class NeRFDataset(torch.utils.data.Dataset):
             'far': self.far,
             'idx': raw_sample['idx'],
             'rect': raw_sample['face_rect'],
-            'bc_img': self.bc_img,
+            'bg_img': self.bg_img,
             'c2w': raw_sample['c2w'][:3],
             'euler': raw_sample['euler'],
             'trans': raw_sample['trans'],

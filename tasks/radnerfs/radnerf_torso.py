@@ -62,6 +62,9 @@ class RADNeRFTorsoTask(RADNeRFTask):
             'eps': 1e-15
         })
         return self.optimizer
+    
+    def build_scheduler(self, optimizer):
+        return ExponentialScheduleForRADNeRFTorso(optimizer, hparams['lr'], hparams['warmup_updates'])
 
     ##########################
     # forward the model

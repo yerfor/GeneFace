@@ -5,5 +5,3 @@ task_cls: tasks.radnerfs.radnerf.RADNeRFTask
 cond_type: idexp_lm3d_normalized
 cond_win_size: 1
 smo_win_size: 5
-
-torso_shrink: 0.8 # shrink bg coords to allow more flexibility in deform

@@ -133,9 +133,9 @@ def load_processed_data(processed_dir):
         train_meta = json.load(f)
     with open(val_json_name) as f:
         val_meta = json.load(f)
-    bc_img = imageio.imread(background_img_name)
-    ret_dict['bc_img'] = bc_img
-    ret_dict['H'], ret_dict['W'] = bc_img.shape[:2]
+    bg_img = imageio.imread(background_img_name)
+    ret_dict['bg_img'] = bg_img
+    ret_dict['H'], ret_dict['W'] = bg_img.shape[:2]
     ret_dict['focal'], ret_dict['cx'], ret_dict['cy'] = float(train_meta['focal_len']), float(train_meta['cx']), float(train_meta['cy'])
 
     idexp_lm3d_normalized_win_lst = []

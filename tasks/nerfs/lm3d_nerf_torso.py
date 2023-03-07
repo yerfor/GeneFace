@@ -56,7 +56,7 @@ class Lm3dNeRFTorsoTask(ADNeRFTorsoTask):
         cy = sample['cy']
         near = sample['near']
         far = sample['far']
-        bc_img = sample['bc_img']
+        bg_img = sample['bg_img']
         c2w_t = sample['c2w'] 
         c2w_t0 = sample['c2w_t0']
         euler = sample['euler']
@@ -79,7 +79,7 @@ class Lm3dNeRFTorsoTask(ADNeRFTorsoTask):
                 else:
                     cond_feat = self.head_model.cal_cond_feat(cond, with_att=False)
                 rgb_pred, disp, acc, last_weight, rgb_map_fg, extras = render_dynamic_face(H, W, focal, cx, cy, rays_o=rays_o, rays_d=rays_d,
-                    bc_rgb=bc_img, chunk=2048, c2w=None, cond=cond_feat, near=near, far=far,
+                    bc_rgb=bg_img, chunk=2048, c2w=None, cond=cond_feat, near=near, far=far,
                     network_fn=self.head_model, N_samples=self.n_samples_per_ray, N_importance=self.n_samples_per_ray_fine,
                     run_head_mode=True,
                     c2w_t=c2w_t, c2w_t0=c2w_t0,t=torch.tensor([0.,]).cuda(),
@@ -91,7 +91,7 @@ class Lm3dNeRFTorsoTask(ADNeRFTorsoTask):
 
                 cond_feat = self.model.cal_cond_feat(sample['deepspeech_wins'],color=rgb_pred, euler=sample['euler'], trans=sample['trans'],with_att=True)
                 rgb_pred_torso, disp_torso, acc_torso, last_weight_torso, rgb_map_fg_torso, extras_torso = render_dynamic_face(H, W, focal, cx, cy, rays_o=rays_o, rays_d=rays_d,
-                    bc_rgb=bc_img,chunk=2048, c2w=None, cond=cond_feat, near=near, far=far,
+                    bc_rgb=bg_img,chunk=2048, c2w=None, cond=cond_feat, near=near, far=far,
                     network_fn=self.model, N_samples=self.n_samples_per_ray, N_importance=self.n_samples_per_ray_fine,
                     run_head_mode=False,
                     c2w_t=c2w_t, c2w_t0=c2w_t0,t=torch.tensor([0.,]).cuda(),
@@ -143,7 +143,7 @@ class Lm3dNeRFTorsoTask(ADNeRFTorsoTask):
                 # uniformly sample the rays
                 rays_o, rays_d, select_coords = self.rays_sampler(H, W, focal, c2w_t, n_rays=None, rect=sample['rect'], in_rect_percent=hparams['in_rect_percent'], iterations=self.global_step)
                 rgb_gt = self.rays_sampler.sample_pixels_from_img_with_select_coords(sample['head_img'], select_coords)
-                rgb_bc = self.rays_sampler.sample_pixels_from_img_with_select_coords(sample['bc_img'], select_coords)
+                rgb_bc = self.rays_sampler.sample_pixels_from_img_with_select_coords(sample['bg_img'], select_coords)
                 with torch.no_grad():
                     # calculate the condition
                     if with_att:
@@ -173,7 +173,7 @@ class Lm3dNeRFTorsoTask(ADNeRFTorsoTask):
                             in_rect_percent=hparams['in_rect_percent'])
                 rays_o_head, rays_d_head, _ = self.rays_sampler(H, W, focal, c2w_t, select_coords=select_coords)
                 rgb_gt = self.rays_sampler.sample_pixels_from_img_with_select_coords(target, select_coords)
-                rgb_bc = self.rays_sampler.sample_pixels_from_img_with_select_coords(sample['bc_img'], select_coords)
+                rgb_bc = self.rays_sampler.sample_pixels_from_img_with_select_coords(sample['bg_img'], select_coords)
 
                 # render head
                 with torch.no_grad():

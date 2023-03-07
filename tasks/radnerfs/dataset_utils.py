@@ -1,6 +1,7 @@
 import os
 import tqdm
 import torch
+import cv2
 import numpy as np
 from utils.commons.hparams import hparams, set_hparams
 from utils.commons.tensor_utils import convert_to_tensor
@@ -33,7 +34,21 @@ class RADNeRFDataset(torch.utils.data.Dataset):
         self.cy = ds_dict['cy']
         self.near = hparams['near'] # follow AD-NeRF, we dont use near-far in ds_dict
         self.far = hparams['far'] # follow AD-NeRF, we dont use near-far in ds_dict
-        self.bc_img = torch.from_numpy(ds_dict['bc_img']).float() / 255.
+        if hparams['bg_img_fname'] == '':
+            # use the default bg_img from dataset
+            bg_img = torch.from_numpy(ds_dict['bg_img']).float() / 255.
+        elif self.opt.bg_img == 'white': # special
+            bg_img = np.ones((self.H, self.W, 3), dtype=np.float32)
+        elif self.opt.bg_img == 'black': # special
+            bg_img = np.zeros((self.H, self.W, 3), dtype=np.float32)
+        else: # load from a specificfile
+            bg_img = cv2.imread(self.opt.bg_img, cv2.IMREAD_UNCHANGED) # [H, W, 3]
+            if bg_img.shape[0] != self.H or bg_img.shape[1] != self.W:
+                bg_img = cv2.resize(bg_img, (self.W, self.H), interpolation=cv2.INTER_AREA)
+            bg_img = cv2.cvtColor(bg_img, cv2.COLOR_BGR2RGB)
+            bg_img = bg_img.astype(np.float32) / 255 # [H, W, 3/4]
+        self.bg_img = bg_img
+
         self.idexp_lm3d_mean = torch.from_numpy(ds_dict['idexp_lm3d_mean']).float()
         self.idexp_lm3d_std = torch.from_numpy(ds_dict['idexp_lm3d_std']).float()
 
@@ -98,7 +113,7 @@ class RADNeRFDataset(torch.utils.data.Dataset):
             'idx': raw_sample['idx'],
             'face_rect': raw_sample['face_rect'],
             'lip_rect': self.lips_rect[idx],
-            'bc_img': self.bc_img,
+            'bg_img': self.bg_img,
             'c2w': raw_sample['c2w'][:3],
             'euler': raw_sample['euler'],
             'trans': raw_sample['trans'],
@@ -140,7 +155,7 @@ class RADNeRFDataset(torch.utils.data.Dataset):
         sample['face_mask'] = face_mask
 
         bg_torso_img = sample['torso_img']
-        bg_torso_img = bg_torso_img[..., :3] * bg_torso_img[..., 3:] + self.bc_img * (1 - bg_torso_img[..., 3:])
+        bg_torso_img = bg_torso_img[..., :3] * bg_torso_img[..., 3:] + self.bg_img * (1 - bg_torso_img[..., 3:])
         bg_torso_img = bg_torso_img.view(1, -1, 3) # treat torso as a part of background
         bg_img =  self.bg_img.view(1, -1, 3).to(self.device) 
         

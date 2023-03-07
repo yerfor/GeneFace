@@ -71,15 +71,21 @@ min_near: 0.05 # minimum near distance for camera
 bound: 1 # assume the scene is bounded in box[-bound, bound]^3, if > 1, will invoke adaptive ray marching.
 camera_scale: 4. # scale camera location into box[-bound, bound]^3
 camera_offset: [0, 0, 0] # offset of camera location
-dt_gamma: 0.00390625 # default 1/256, dt_gamma (>=0) for adaptive ray marching. set to 0 to disable, >0 to accelerate rendering (but usually with worse quality)
-density_thresh: 10 # threshold for density grid to be occupied (sigma)
 grid_size: 128
 desired_resolution: 2048
 log2_hashmap_size: 16
+dt_gamma: 0.00390625 # default 1/256, dt_gamma (>=0) for adaptive ray marching. set to 0 to disable, >0 to accelerate rendering (but usually with worse quality)
+density_thresh: 10 # threshold for density grid to be occupied (sigma)
+density_thresh_torso: 0.01 # threshold for density grid to be occupied (alpha)
+torso_shrink: 0.8 # shrink bg coords to allow more flexibility in deform
+
+
 
 smooth_lips: false
 
 # Network
+with_att: true
+use_window_cond: true
 num_layers_sigma: 3
 hidden_dim_sigma: 128 # 64 by radnerf is too small
 geo_feat_dim: 128 # 64 by radnerf is too small
@@ -89,10 +95,9 @@ cond_out_dim: 64
 num_layers_ambient: 3
 hidden_dim_ambient: 128 # 64 by radnerf is too small
 ambient_out_dim: 2
-with_att: true
 individual_embedding_num: 10000
 individual_embedding_dim: 4
-use_window_cond: true
+torso_individual_embedding_dim: 8
 
 # infer
 infer_cond_name: ''

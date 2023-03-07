@@ -80,7 +80,7 @@ class Lm3dNeRF(nn.Module):
         cy = sample['cy']
         near = sample['near']
         far = sample['far']
-        bc_img = sample['bc_img']
+        bg_img = sample['bg_img']
         c2w = sample['c2w'] 
         c2w_t0 = sample['c2w_t0']
         t = sample['t'] 
@@ -94,7 +94,7 @@ class Lm3dNeRF(nn.Module):
         if infer:
             rays_o, rays_d, _ = self.full_rays_sampler(H, W, focal, c2w)
             rgb_pred, disp, acc, _, _,  extras = render_dynamic_face(H, W, focal, cx, cy, rays_o=rays_o, rays_d=rays_d,
-                bc_rgb=bc_img, 
+                bc_rgb=bg_img, 
                 chunk=2048,
                 c2w=None, cond=cond_feat, near=near, far=far,
                 network_fn=self.model, N_samples=self.n_samples_per_ray, N_importance=self.n_samples_per_ray_fine,
@@ -108,7 +108,7 @@ class Lm3dNeRF(nn.Module):
             rays_o, rays_d, select_coords = self.rays_sampler(H, W, focal, c2w, n_rays=None, rect=sample['rect'], in_rect_percent=hparams['in_rect_percent'], iterations=self.global_step)
             target = sample['head_img']
             rgb_gt = self.rays_sampler.sample_pixels_from_img_with_select_coords(target, select_coords)
-            rgb_bc = self.rays_sampler.sample_pixels_from_img_with_select_coords(sample['bc_img'], select_coords)
+            rgb_bc = self.rays_sampler.sample_pixels_from_img_with_select_coords(sample['bg_img'], select_coords)
 
             rgb_pred, disp, acc, _, _, extras = render_dynamic_face(H, W, focal, cx, cy, rays_o=rays_o, rays_d=rays_d,
                 bc_rgb=rgb_bc,chunk=self.chunk, c2w=None, cond=cond_feat, near=near, far=far,

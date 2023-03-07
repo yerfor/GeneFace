@@ -104,9 +104,9 @@ def extract_background(base_dir, ori_imgs_dir):
         imgs.append(img)
     imgs = np.stack(imgs).reshape(-1, num_pixs, 3)
 
-    bc_img = np.zeros((h*w, 3), dtype=np.uint8)
-    bc_img[bc_pixs_id, :] = imgs[bc_ids, bc_pixs_id, :]
-    bc_img = bc_img.reshape(h, w, 3)
+    bg_img = np.zeros((h*w, 3), dtype=np.uint8)
+    bg_img[bc_pixs_id, :] = imgs[bc_ids, bc_pixs_id, :]
+    bg_img = bg_img.reshape(h, w, 3)
 
     max_dist = max_dist.reshape(h, w)
     bc_pixs = max_dist > 5
@@ -115,14 +115,14 @@ def extract_background(base_dir, ori_imgs_dir):
     nbrs = NearestNeighbors(n_neighbors=1, algorithm='kd_tree').fit(fg_xys)
     distances, indices = nbrs.kneighbors(bg_xys)
     bg_fg_xys = fg_xys[indices[:, 0]]
-    bc_img[bg_xys[:, 0], bg_xys[:, 1], :] = bc_img[bg_fg_xys[:, 0], bg_fg_xys[:, 1], :]
+    bg_img[bg_xys[:, 0], bg_xys[:, 1], :] = bg_img[bg_fg_xys[:, 0], bg_fg_xys[:, 1], :]
 
-    cv2.imwrite(os.path.join(base_dir, 'bc.jpg'), bc_img)
+    cv2.imwrite(os.path.join(base_dir, 'bc.jpg'), bg_img)
 
     print(f'[INFO] ===== extracted background image =====')
 
 def extract_head(base_dir):
-    bc_img = cv2.imread(os.path.join(base_dir, 'bc.jpg'), cv2.IMREAD_UNCHANGED)
+    bg_img = cv2.imread(os.path.join(base_dir, 'bc.jpg'), cv2.IMREAD_UNCHANGED)
     ori_imgs_dir = os.path.join(base_dir, 'ori_imgs')
     image_paths = glob.glob(os.path.join(ori_imgs_dir, '*.jpg'))
     
@@ -137,7 +137,7 @@ def extract_head(base_dir):
 
         head_part = (parsing_img[:, :, 0] == 255) & (
             parsing_img[:, :, 1] == 0) & (parsing_img[:, :, 2] == 0)
-        img[~head_part] = bc_img[~head_part]
+        img[~head_part] = bg_img[~head_part]
         cv2.imwrite(image_path.replace('ori_imgs', 'head_imgs'), img)
     print(f'[INFO] ===== extracted head images =====')
 

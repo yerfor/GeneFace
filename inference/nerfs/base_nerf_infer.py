@@ -202,7 +202,7 @@ class BaseNeRFInfer:
             sample['cy'] = self.dataset.cy
             sample['near'] = hparams['near']
             sample['far'] = hparams['far']
-            sample['bc_img'] = self.dataset.bc_img
+            sample['bg_img'] = self.dataset.bg_img
 
             if self.use_pred_pose:
                 sample['c2w'] = torch.from_numpy(c2w_arr[idx])

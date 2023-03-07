@@ -26,7 +26,7 @@ class RADNeRFTorso(RADNeRF):
         self.torso_deform_pos_embedder, self.torso_deform_pos_dim = get_encoder('frequency', input_dim=2, multires=10) # input 2D position
         self.torso_deform_net = MLP(self.torso_deform_pos_dim + self.pose_embedding_dim, self.ambient_out_dim, self.hidden_dim_ambient, self.num_layers_ambient)
 
-        self.torso_individual_embedding_num = hparams['torso_individual_embedding_num']
+        self.torso_individual_embedding_num = hparams['individual_embedding_num']
         self.torso_individual_embedding_dim = hparams['torso_individual_embedding_dim']
         if self.torso_individual_embedding_dim > 0:
             self.torso_individual_codes = nn.Parameter(torch.randn(self.torso_individual_embedding_num, self.torso_individual_embedding_dim) * 0.1) 
