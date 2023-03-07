@@ -65,6 +65,8 @@ class RADNeRFTorso(RADNeRF):
         # cond: [B, 29, 16]
         # bg_coords: [1, N, 2]
         # return: pred_rgb: [B, N, 3]
+
+        ### run head nerf with no_grad to get the renderred head
         with torch.no_grad():
             prefix = rays_o.shape[:-1]
             rays_o = rays_o.contiguous().view(-1, 3)
@@ -126,7 +128,6 @@ class RADNeRFTorso(RADNeRF):
             # background
             if bg_color is None:
                 bg_color = 1
-
 
         ### Start Rendering Torso
         if self.torso_individual_embedding_dim > 0:

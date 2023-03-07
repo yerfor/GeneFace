@@ -138,14 +138,21 @@ class RADNeRFTask(BaseTask):
                 face_mask = sample['face_mask'] # [B, N]
                 losses_out['ambient_loss'] = (ambient * (~face_mask.view(-1))).mean()
                 
-            if start_finetune_lip and self.finetune_lip_flag:
-                # during the training phase of finetuning lip, all rays are from lip part
-                xmin, xmax, ymin, ymax = sample['lip_rect']
-                gt_rgb = gt_rgb.view(-1, xmax - xmin, ymax - ymin, 3).permute(0, 3, 1, 2).contiguous()
-                pred_rgb = pred_rgb.view(-1, xmax - xmin, ymax - ymin, 3).permute(0, 3, 1, 2).contiguous()
-                losses_out['lpips_loss'] = self.criterion_lpips(pred_rgb, gt_rgb).mean()
+                if start_finetune_lip and self.finetune_lip_flag:
+                    # during the training phase of finetuning lip, all rays are from lip part
+                    xmin, xmax, ymin, ymax = sample['lip_rect']
+                    gt_rgb = gt_rgb.view(-1, xmax - xmin, ymax - ymin, 3).permute(0, 3, 1, 2).contiguous()
+                    pred_rgb = pred_rgb.view(-1, xmax - xmin, ymax - ymin, 3).permute(0, 3, 1, 2).contiguous()
+                    losses_out['lpips_loss'] = self.criterion_lpips(pred_rgb, gt_rgb).mean()
+            else:
+                # validation step, calulate lpips loss
+                if 'lip_rect' in sample:
+                    xmin, xmax, ymin, ymax = sample['lip_rect']
+                    lip_gt_rgb = gt_rgb.view(-1,H,W,3)[:,xmin:xmax,ymin:ymax,:].permute(0, 3, 1, 2).contiguous()
+                    lip_pred_rgb = pred_rgb.view(-1,H,W,3)[:,xmin:xmax,ymin:ymax,:].permute(0, 3, 1, 2).contiguous()
+                    losses_out['lpips_loss'] = self.criterion_lpips(lip_pred_rgb, lip_gt_rgb).mean()
             
-            if start_finetune_lip:
+            if self.model.training and start_finetune_lip:
                 # during training, flip in each iteration, to prevent forgetting other facial parts.
                 self.finetune_lip_flag = not self.finetune_lip_flag
                 self.train_dataset.finetune_lip_flag = self.finetune_lip_flag
@@ -231,13 +238,11 @@ class RADNeRFTask(BaseTask):
     @torch.no_grad()
     def validation_step(self, sample, batch_idx):
         outputs = {}
-        self.val_dataset.training = True
         outputs['losses'] = {}
         outputs['losses'], model_out = self.run_model(sample, infer=False)
         outputs['total_loss'] = sum(outputs['losses'].values())
         outputs['nsamples'] = 1
         outputs = tensors_to_scalars(outputs)
-        self.val_dataset.training = False
         if self.global_step % hparams['valid_infer_interval'] == 0 \
                 and batch_idx < hparams['num_valid_plots']:
             num_val_samples = len(self.val_dataset)
