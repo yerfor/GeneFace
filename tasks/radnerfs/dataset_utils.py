@@ -26,7 +26,13 @@ def smooth_camera_path(poses, kernel_size=7):
         start = max(0, i - K)
         end = min(N, i + K + 1)
         poses[i, :3, 3] = trans[start:end].mean(0)
-        poses[i, :3, :3] = Rotation.from_matrix(rots[start:end]).mean().as_matrix()
+        try:
+            poses[i, :3, :3] = Rotation.from_matrix(rots[start:end]).mean().as_matrix()
+        except:
+            if i == 0:
+                poses[i, :3, :3] = rots[i]
+            else:
+                poses[i, :3, :3] = poses[i-1, :3, :3]
     return poses
 
 

@@ -95,12 +95,14 @@ class RADNeRFTorsoTask(RADNeRFTask):
 
         if not infer:
             model_out = self.model.render(rays_o, rays_d, cond_inp, bg_coords, poses, index=idx, staged=False, bg_color=bg_color, perturb=True, force_all_rays=False, **hparams)
-            pred_rgb = model_out['torso_rgb_map'] 
-            # pred_rgb = model_out['rgb_map'] # todo: try whole image 
+            if hparams['torso_train_mode'] == 1:
+                pred_rgb = model_out['torso_rgb_map'] 
+                gt_rgb = sample['bg_torso_img'] # the target is bg_torso_img
+            else:
+                pred_rgb = model_out['rgb_map'] # todo: try whole image 
+                gt_rgb = sample['gt_img'] # todo: try gt_image
 
             losses_out = {}
-            gt_rgb = sample['bg_torso_img'] # the target is bg_torso_img
-            # gt_rgb = sample['gt_img'] # todo: try gt_image
 
             losses_out['torso_mse_loss'] = torch.mean((pred_rgb - gt_rgb) ** 2) # [B, N, 3] -->  scalar
 

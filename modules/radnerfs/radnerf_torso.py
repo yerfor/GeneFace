@@ -29,12 +29,26 @@ class RADNeRFTorso(RADNeRF):
         
         self.torso_pose_embedder, self.pose_embedding_dim = get_encoder('frequency', input_dim=6, multires=4)
         self.torso_deform_pos_embedder, self.torso_deform_pos_dim = get_encoder('frequency', input_dim=2, multires=10) # input 2D position
-        self.torso_deform_net = MLP(self.torso_deform_pos_dim + self.pose_embedding_dim + self.torso_individual_embedding_dim, 2, 64, 3)
-
         self.torso_embedder, self.torso_in_dim = get_encoder('tiledgrid', input_dim=2, num_levels=16, level_dim=2, base_resolution=16, log2_hashmap_size=16, desired_resolution=2048)
-        self.torso_canonicial_net = MLP(self.torso_in_dim + self.torso_deform_pos_dim + self.pose_embedding_dim + self.torso_individual_embedding_dim, 4, 32, 3)
+        
+        deform_net_in_dim = self.torso_deform_pos_dim + self.pose_embedding_dim + self.torso_individual_embedding_dim
+        canonicial_net_in_dim = self.torso_in_dim + self.torso_deform_pos_dim + self.pose_embedding_dim + self.torso_individual_embedding_dim
+        if hparams['torso_head_aware']:
+            head_aware_out_dim = 16
+            self.head_color_weights_encoder = nn.Sequential(*[
+                nn.Linear(3+1, 16, bias=True),
+                nn.LeakyReLU(0.02, True),
+                nn.Linear(16, 32, bias=True),
+                nn.LeakyReLU(0.02, True),
+                nn.Linear(32, head_aware_out_dim, bias=True),
+            ])
+            deform_net_in_dim += head_aware_out_dim
+            canonicial_net_in_dim += head_aware_out_dim
 
-    def forward_torso(self, x, poses, c=None):
+        self.torso_deform_net = MLP(deform_net_in_dim, 2, 64, 3)
+        self.torso_canonicial_net = MLP(canonicial_net_in_dim, 4, 32, 3)
+
+    def forward_torso(self, x, poses, c=None, image=None, weights_sum=None):
         # x: [N, 2] in [-1, 1]
         # head poses: [1, 6]
         # c: [1, ind_dim], individual code
@@ -50,6 +64,15 @@ class RADNeRFTorso(RADNeRF):
             h = torch.cat([enc_x, enc_pose.repeat(x.shape[0], 1), c.repeat(x.shape[0], 1)], dim=-1)
         else:
             h = torch.cat([enc_x, enc_pose.repeat(x.shape[0], 1)], dim=-1)
+
+        if hparams['torso_head_aware']:
+            if image is None:
+                image = torch.zeros([x.shape[0],3], dtype=h.dtype, device=h.device)
+                weights_sum = torch.zeros([x.shape[0],1], dtype=h.dtype, device=h.device)
+            head_color_weights_inp = torch.cat([image, weights_sum],dim=-1)
+            head_color_weights_encoding = self.head_color_weights_encoder(head_color_weights_inp)
+            h = torch.cat([h, head_color_weights_encoding],dim=-1)
+
         dx = self.torso_deform_net(h)
         x = (x + dx).clamp(-1, 1)
         x = self.torso_embedder(x, bound=1)
@@ -149,7 +172,13 @@ class RADNeRFTorso(RADNeRF):
         torso_color = torch.zeros([N, 3], device=device)
 
         if mask.any():
-            torso_alpha_mask, torso_color_mask, deform = self.forward_torso(bg_coords[mask], poses, torso_individual_code)
+            if hparams['torso_head_aware']:
+                if random.random() < 0.5:
+                    torso_alpha_mask, torso_color_mask, deform = self.forward_torso(bg_coords[mask], poses, torso_individual_code, image[mask], weights_sum.unsqueeze(-1)[mask])
+                else:
+                    torso_alpha_mask, torso_color_mask, deform = self.forward_torso(bg_coords[mask], poses, torso_individual_code, None, None)
+            else:
+                torso_alpha_mask, torso_color_mask, deform = self.forward_torso(bg_coords[mask], poses, torso_individual_code)
             torso_alpha[mask] = torso_alpha_mask.float()
             torso_color[mask] = torso_color_mask.float()
             results['deform'] = deform
