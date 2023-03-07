@@ -16,7 +16,7 @@ from utils.commons.dataset_utils import data_loader
 from utils.commons.hparams import hparams
 from utils.commons.ckpt_utils import load_ckpt
 from utils.commons.tensor_utils import tensors_to_scalars, convert_to_np, move_to_cuda
-from utils.nn.model_utils import print_arch, num_params
+from utils.nn.model_utils import print_arch, num_params, not_requires_grad
 from utils.nn.schedulers import ExponentialScheduleForRADNeRFTorso
 from utils.nn.grad import get_grad_norm
 
@@ -39,8 +39,11 @@ class RADNeRFTorsoTask(RADNeRFTask):
         del head_model
         
         self.torso_embedders_params = [p for k, p in self.model.named_parameters() if p.requires_grad and 'torso_embedder' in k]
-        self.torso_network_params = [p for k, p in self.model.named_parameters() if (p.requires_grad and 'torso_embedder' not in k)]
-        
+        self.torso_network_params = [p for k, p in self.model.named_parameters() if (p.requires_grad and 'torso_embedder' not in k and 'torso' in k)]
+        for k, p in self.model.named_parameters():
+            if 'torso' not in k:
+                not_requires_grad(p)
+
         self.model.poses = self.train_dataset.poses
         return self.model
 

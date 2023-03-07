@@ -140,6 +140,7 @@ class RADNeRFTask(BaseTask):
                 
             if start_finetune_lip and self.finetune_lip_flag:
                 # during the training phase of finetuning lip, all rays are from lip part
+                xmin, xmax, ymin, ymax = sample['lip_rect']
                 gt_rgb = gt_rgb.view(-1, xmax - xmin, ymax - ymin, 3).permute(0, 3, 1, 2).contiguous()
                 pred_rgb = pred_rgb.view(-1, xmax - xmin, ymax - ymin, 3).permute(0, 3, 1, 2).contiguous()
                 losses_out['lpips_loss'] = self.criterion_lpips(pred_rgb, gt_rgb).mean()
