@@ -168,6 +168,7 @@ class RADNeRFTorso(RADNeRF):
 
         return results
     
+    @torch.no_grad()
     def update_extra_state(self, decay=0.95, S=128):
         # forbid updating head if is training torso...
         # only update torso density grid

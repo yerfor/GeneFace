@@ -29,7 +29,6 @@ class RADNeRFTorsoTask(RADNeRFTask):
 
     def build_model(self):
         self.model = RADNeRFTorso(hparams) 
-
         # todo: load state_dict in RADNeRF
         head_model = RADNeRF(hparams)
         load_ckpt(head_model, hparams['head_model_dir'])
@@ -37,7 +36,7 @@ class RADNeRFTorsoTask(RADNeRFTask):
         self.model.load_state_dict(head_model.state_dict(), strict=False)
         print(f"Loaded state_dict of Head Model to the RADNeRFTorso Model")
         del head_model
-        
+
         self.torso_embedders_params = [p for k, p in self.model.named_parameters() if p.requires_grad and 'torso_embedder' in k]
         self.torso_network_params = [p for k, p in self.model.named_parameters() if (p.requires_grad and 'torso_embedder' not in k and 'torso' in k)]
         for k, p in self.model.named_parameters():
@@ -93,10 +92,8 @@ class RADNeRFTorsoTask(RADNeRFTask):
         H, W = sample['H'], sample['W']
 
         cond_inp = cond_wins
-        start_finetune_lip = hparams['finetune_lips'] and self.global_step > hparams['finetune_lips_start_iter']
 
         if not infer:
-            # training phase, sample rays from the image
             model_out = self.model.render(rays_o, rays_d, cond_inp, bg_coords, poses, index=idx, staged=False, bg_color=bg_color, perturb=True, force_all_rays=False, **hparams)
             pred_rgb = model_out['torso_rgb_map'] 
             # pred_rgb = model_out['rgb_map'] # todo: try whole image 
@@ -107,10 +104,9 @@ class RADNeRFTorsoTask(RADNeRFTask):
 
             losses_out['torso_mse_loss'] = torch.mean((pred_rgb - gt_rgb) ** 2) # [B, N, 3] -->  scalar
 
-            if self.model.training:
-                alphas = model_out['torso_alpha_map'].clamp(1e-5, 1 - 1e-5)
-                losses_out['torso_weights_entropy_loss'] = torch.mean(- alphas * torch.log2(alphas) - (1 - alphas) * torch.log2(1 - alphas))
-            
+            alphas = model_out['torso_alpha_map'].clamp(1e-5, 1 - 1e-5)
+            losses_out['torso_weights_entropy_loss'] = torch.mean(- alphas * torch.log2(alphas) - (1 - alphas) * torch.log2(1 - alphas))
+        
             return losses_out, model_out
             
         else:
