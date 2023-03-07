@@ -57,32 +57,8 @@ class LM3dNeRFInfer(BaseNeRFInfer):
         idexp_lm3d_std = self.dataset.idexp_lm3d_std
         idexp_lm3d_normalized = (idexp_lm3d.reshape([-1,68,3]) - idexp_lm3d_mean)/idexp_lm3d_std
 
-        # step1. clamp the lm3d, to regularize apparent outliers
-        lm3d_clamp_std = hparams['infer_lm3d_clamp_std']
-        idexp_lm3d_normalized[:,0:17] = torch.clamp(idexp_lm3d_normalized[:,0:17], -lm3d_clamp_std, lm3d_clamp_std) # yaw_x_y_z
-        idexp_lm3d_normalized[:,17:27,0:2] = torch.clamp(idexp_lm3d_normalized[:,17:27,0:2], -lm3d_clamp_std/2, lm3d_clamp_std/2) # brow_x_y
-        idexp_lm3d_normalized[:,17:27,2] = torch.clamp(idexp_lm3d_normalized[:,17:27,2], -lm3d_clamp_std, lm3d_clamp_std) # brow_z
-        idexp_lm3d_normalized[:,27:36] = torch.clamp(idexp_lm3d_normalized[:,27:36], -lm3d_clamp_std, lm3d_clamp_std) # nose
-        idexp_lm3d_normalized[:,36:48,0:2] = torch.clamp(idexp_lm3d_normalized[:,36:48,0:2], -lm3d_clamp_std/2, lm3d_clamp_std/2) # eye_x_y
-        idexp_lm3d_normalized[:,36:48,2] = torch.clamp(idexp_lm3d_normalized[:,36:48,2], -lm3d_clamp_std, lm3d_clamp_std) # eye_z
-        idexp_lm3d_normalized[:,48:68] = torch.clamp(idexp_lm3d_normalized[:,48:68], -lm3d_clamp_std, lm3d_clamp_std) # mouth
-        idexp_lm3d_normalized = idexp_lm3d_normalized.reshape([-1,68*3])
-
-        # step2. LLE projection to drag the predicted lm3d closer to the GT lm3d
-        LLE_percent = hparams['infer_lm3d_lle_percent']
-        if LLE_percent > 0:
-            idexp_lm3d_normalized_database = torch.stack([s['idexp_lm3d_normalized'] for s in self.dataset.samples]).reshape([-1, 68*3])
-            feat_fuse, _, _ = compute_LLE_projection(feats=idexp_lm3d_normalized[:, :48*3], feat_database=idexp_lm3d_normalized_database[:, :48*3], K=10)
-            idexp_lm3d_normalized[:, :48*3] = LLE_percent * feat_fuse + (1-LLE_percent) * idexp_lm3d_normalized[:,:48*3]
-        
-        # step3. gaussian filter to smooth the whole sequence
-        lm3d_smooth_sigma = hparams['infer_lm3d_smooth_sigma']
-        if lm3d_smooth_sigma > 0:
-            idexp_lm3d_normalized[:, :48*3] = convert_to_tensor(gaussian_filter1d(idexp_lm3d_normalized[:, :48*3].numpy(), sigma=lm3d_smooth_sigma))
-            # idexp_lm3d_normalized = convert_to_tensor(gaussian_filter1d(idexp_lm3d_normalized.numpy(), sigma=lm3d_smooth_sigma))
-        
-        # step4. inject eye blink
-        inject_eye_blink_mode = hparams.get("infer_inject_eye_blink_mode", "gt")
+        # step1. inject eye blink
+        inject_eye_blink_mode = hparams.get("infer_inject_eye_blink_mode", "none")
         print(f"The eye blink mode is: {inject_eye_blink_mode}")
         if inject_eye_blink_mode == 'none':
             pass
@@ -95,17 +71,22 @@ class LM3dNeRFInfer(BaseNeRFInfer):
             idexp_lm3d_normalized_database = torch.stack([s['idexp_lm3d_normalized'] for s in self.dataset.samples]).reshape([-1, 68*3])
             blink_eye_pattern = idexp_lm3d_normalized_database[blink_ref_frames_start_idx:blink_ref_frames_end_idx+1, 17*3:48*3].clone()
             repeated_blink_eye_pattern = blink_eye_pattern.repeat([len(idexp_lm3d_normalized)//len(blink_eye_pattern)+1,1])[:len(idexp_lm3d_normalized)]
+            idexp_lm3d_normalized = idexp_lm3d_normalized.reshape([-1, 68*3])
             idexp_lm3d_normalized[:, 17*3:48*3] = repeated_blink_eye_pattern
+            idexp_lm3d_normalized = idexp_lm3d_normalized.reshape([-1, 68,3])
         elif inject_eye_blink_mode == 'gt':
             # use the eye blink sequence from the gt data
             idexp_lm3d_normalized_database = torch.stack([s['idexp_lm3d_normalized'] for s in self.dataset.samples]).reshape([-1, 68*3])
             blink_eye_pattern = idexp_lm3d_normalized_database[:, 17*3:48*3].clone()
             repeated_blink_eye_pattern = blink_eye_pattern.repeat([len(idexp_lm3d_normalized)//len(blink_eye_pattern)+1,1])[:len(idexp_lm3d_normalized)]
+            idexp_lm3d_normalized = idexp_lm3d_normalized.reshape([-1, 68*3])
             idexp_lm3d_normalized[:, 17*3:48*3] = repeated_blink_eye_pattern
+            idexp_lm3d_normalized = idexp_lm3d_normalized.reshape([-1, 68,3])
+
         else:
             raise NotImplementedError()
-
-        # step5. close the mouth in silent frames
+        
+        # step2. close the mouth in silent frames
         # todo: remove `infer_sil_ref_frame_idx`, close the mouth using the current frame instead.
         if hparams.get('infer_close_mouth_when_sil', False):
             idexp_lm3d_normalized = idexp_lm3d_normalized.reshape([-1, 68*3])
@@ -124,6 +105,32 @@ class LM3dNeRFInfer(BaseNeRFInfer):
             repeated_sil_mouth_pattern = sil_mouth_pattern.unsqueeze(0).repeat([len(sil_index),1])
             idexp_lm3d_normalized[sil_index, 48*3:68*3] = repeated_sil_mouth_pattern
 
+
+        # step3. clamp the lm3d, to regularize apparent outliers
+        lm3d_clamp_std = hparams['infer_lm3d_clamp_std']
+        idexp_lm3d_normalized[:,0:17] = torch.clamp(idexp_lm3d_normalized[:,0:17], -lm3d_clamp_std, lm3d_clamp_std) # yaw_x_y_z
+        idexp_lm3d_normalized[:,17:27,0:2] = torch.clamp(idexp_lm3d_normalized[:,17:27,0:2], -lm3d_clamp_std/2, lm3d_clamp_std/2) # brow_x_y
+        idexp_lm3d_normalized[:,17:27,2] = torch.clamp(idexp_lm3d_normalized[:,17:27,2], -lm3d_clamp_std, lm3d_clamp_std) # brow_z
+        idexp_lm3d_normalized[:,27:36] = torch.clamp(idexp_lm3d_normalized[:,27:36], -lm3d_clamp_std, lm3d_clamp_std) # nose
+        idexp_lm3d_normalized[:,36:48,0:2] = torch.clamp(idexp_lm3d_normalized[:,36:48,0:2], -lm3d_clamp_std/2, lm3d_clamp_std/2) # eye_x_y
+        idexp_lm3d_normalized[:,36:48,2] = torch.clamp(idexp_lm3d_normalized[:,36:48,2], -lm3d_clamp_std, lm3d_clamp_std) # eye_z
+        idexp_lm3d_normalized[:,48:68] = torch.clamp(idexp_lm3d_normalized[:,48:68], -lm3d_clamp_std, lm3d_clamp_std) # mouth
+        idexp_lm3d_normalized = idexp_lm3d_normalized.reshape([-1,68*3])
+
+        # step4. LLE projection to drag the predicted lm3d closer to the GT lm3d
+        LLE_percent = hparams['infer_lm3d_lle_percent']
+        if LLE_percent > 0:
+            idexp_lm3d_normalized_database = torch.stack([s['idexp_lm3d_normalized'] for s in self.dataset.samples]).reshape([-1, 68*3])
+            feat_fuse, _, _ = compute_LLE_projection(feats=idexp_lm3d_normalized[:, :48*3], feat_database=idexp_lm3d_normalized_database[:, :48*3], K=10)
+            idexp_lm3d_normalized[:, :48*3] = LLE_percent * feat_fuse + (1-LLE_percent) * idexp_lm3d_normalized[:,:48*3]
+        
+        # step5. gaussian filter to smooth the whole sequence
+        lm3d_smooth_sigma = hparams['infer_lm3d_smooth_sigma']
+        if lm3d_smooth_sigma > 0:
+            idexp_lm3d_normalized[:, :48*3] = convert_to_tensor(gaussian_filter1d(idexp_lm3d_normalized[:, :48*3].numpy(), sigma=lm3d_smooth_sigma))
+            # idexp_lm3d_normalized = convert_to_tensor(gaussian_filter1d(idexp_lm3d_normalized.numpy(), sigma=lm3d_smooth_sigma))
+        
+        
         idexp_lm3d_normalized_numpy = idexp_lm3d_normalized.cpu().numpy()
         idexp_lm3d_normalized_win_numpy = np.stack([get_win_conds(idexp_lm3d_normalized_numpy, i, smo_win_size=hparams['cond_win_size'], pad_option='edge') for i in range(idexp_lm3d_normalized_numpy.shape[0])])
         idexp_lm3d_normalized_win = torch.from_numpy(idexp_lm3d_normalized_win_numpy)

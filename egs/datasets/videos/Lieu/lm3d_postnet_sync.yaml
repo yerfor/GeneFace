@@ -1,0 +1,5 @@
+base_config:
+  - egs/egs_bases/postnet/base.yaml
+
+video_id: Macron # the video file should be located at `data/raw/videos/<video_id>.mp4`
+

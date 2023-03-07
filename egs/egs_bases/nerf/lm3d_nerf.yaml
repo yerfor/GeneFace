@@ -10,7 +10,7 @@ with_att: true # only available when use win_cond, use a attention Net in AD-NeR
 cond_win_size: 1
 smo_win_size: 5
 
-infer_inject_eye_blink_mode: gt # none|gt|period. `gt` uses the eye blink sequence from GT dataset, `period` use a ref blink sequence from GT dataset and repeat it to the final length
+infer_inject_eye_blink_mode: none # none|gt|period. `gt` uses the eye blink sequence from GT dataset, `period` use a ref blink sequence from GT dataset and repeat it to the final length
 infer_eye_blink_ref_frames_start_idx: '' # start index of the ref blink sequence in the GT dataset
 infer_eye_blink_ref_frames_end_idx: ''  # end index of the ref blink sequence in the GT dataset
 

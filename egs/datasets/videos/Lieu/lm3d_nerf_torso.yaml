@@ -1,0 +1,5 @@
+base_config:
+  - egs/egs_bases/nerf/lm3d_nerf_torso.yaml
+  - ./base.yaml
+  
+head_model_dir: checkpoints/Macron/lm3d_nerf # the path of the head_nerf model, e.g., `checkpoints/<video_id>/lm3d_nerf`
