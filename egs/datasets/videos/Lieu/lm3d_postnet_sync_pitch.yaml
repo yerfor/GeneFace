@@ -1,7 +1,7 @@
 base_config:
   - egs/egs_bases/postnet/base.yaml
 
-video_id: Macron
+video_id: Lieu
 
 task_cls: tasks.postnet.lm3d_postnet_adv_sync_pitch.PostnetAdvSyncTask
 audio2motion_task_cls: tasks.audio2motion.lm3d_vae_sync_pitch.VAESyncAudio2MotionTask
