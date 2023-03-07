@@ -6,12 +6,12 @@ from utils.commons.hparams import hparams
 from tasks.radnerfs.dataset_utils import RADNeRFDataset
 from inference.nerfs.lm3d_nerf_infer import LM3dNeRFInfer
 
+
 class LM3d_RADNeRFInfer(LM3dNeRFInfer):
     def __init__(self, hparams, device=None):
         super().__init__(hparams, device)
         self.dataset_cls = RADNeRFDataset # the dataset only provides head pose 
-        self.dataset = self.dataset_cls('trainval')
-        self.dataset.training = False
+        self.dataset = self.dataset_cls('trainval', training=False)
 
     def get_pose_from_ds(self, samples):
         """

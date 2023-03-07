@@ -3,12 +3,31 @@ import tqdm
 import torch
 import cv2
 import numpy as np
+
+from scipy.spatial.transform import Rotation
+
 from utils.commons.hparams import hparams, set_hparams
 from utils.commons.tensor_utils import convert_to_tensor
 from utils.commons.image_utils import load_image_as_uint8_tensor
 
 from modules.radnerfs.utils import get_audio_features, get_rays, get_bg_coords, convert_poses, nerf_matrix_to_ngp
 
+
+def smooth_camera_path(poses, kernel_size=7):
+    # smooth the camera trajectory (i.e., translation)...
+    # poses: [N, 4, 4], numpy array
+    N = poses.shape[0]
+    K = kernel_size // 2
+    
+    trans = poses[:, :3, 3].copy() # [N, 3]
+    rots = poses[:, :3, :3].copy() # [N, 3, 3]
+
+    for i in range(N):
+        start = max(0, i - K)
+        end = min(N, i + K + 1)
+        poses[i, :3, 3] = trans[start:end].mean(0)
+        poses[i, :3, :3] = Rotation.from_matrix(rots[start:end]).mean().as_matrix()
+    return poses
 
 
 class RADNeRFDataset(torch.utils.data.Dataset):
@@ -55,6 +74,10 @@ class RADNeRFDataset(torch.utils.data.Dataset):
         fl_x = fl_y = self.focal
         self.intrinsics = np.array([fl_x, fl_y, self.cx, self.cy])
         self.poses = torch.from_numpy(np.stack([nerf_matrix_to_ngp(s['c2w'], scale=hparams['camera_scale'], offset=hparams['camera_offset']) for s in self.samples]))
+        if not training and hparams['infer_smooth_camera_path']:
+            smo_poses = smooth_camera_path(self.poses.numpy(), kernel_size=hparams['infer_smooth_camera_path_kernel_size'])
+            self.poses = torch.from_numpy(smo_poses)
+            print(f"Smooth head trajectory (translation) with a window size of {hparams['infer_smooth_camera_path_kernel_size']}")
         self.bg_coords = get_bg_coords(self.H, self.W, 'cpu') # [1, H*W, 2] in [-1, 1]
 
         if self.cond_type == 'deepspeech':
@@ -93,7 +116,6 @@ class RADNeRFDataset(torch.utils.data.Dataset):
     def num_rays(self):
         return hparams['n_rays'] if self.training else -1
 
-
     def __getitem__(self, idx):
         raw_sample = self.samples[idx]
         
@@ -114,16 +136,8 @@ class RADNeRFDataset(torch.utils.data.Dataset):
             'face_rect': raw_sample['face_rect'],
             'lip_rect': self.lips_rect[idx],
             'bg_img': self.bg_img,
-            'c2w': raw_sample['c2w'][:3],
-            'euler': raw_sample['euler'],
-            'trans': raw_sample['trans'],
         }
-            
-        sample.update({
-            'torso_img': raw_sample['torso_img'].float() / 255.,
-            'gt_img': raw_sample['gt_img'].float() / 255.,
-        })
-               
+
         if self.cond_type == 'deepspeech':
             sample.update({
                 'cond_win': raw_sample['deepspeech_win'].unsqueeze(0), # [B=1, T=16, C=29]
@@ -142,6 +156,14 @@ class RADNeRFDataset(torch.utils.data.Dataset):
             raise NotImplementedError
         
         ngp_pose = self.poses[idx].unsqueeze(0)
+        sample['pose'] = convert_poses(ngp_pose) # [B, 6]
+        sample['pose_matrix'] = ngp_pose # [B, 4, 4]
+
+        sample.update({
+            'torso_img': raw_sample['torso_img'].float() / 255.,
+            'gt_img': raw_sample['gt_img'].float() / 255.,
+        })
+        
         if self.training and self.finetune_lip_flag:
             # the finetune_lip_flag is controlled by the task that use this dataset 
             rays = get_rays(ngp_pose.cuda(), self.intrinsics, self.H, self.W, N=-1, rect=sample['lip_rect'])
@@ -176,8 +198,7 @@ class RADNeRFDataset(torch.utils.data.Dataset):
             bg_coords = self.bg_coords # [1, N, 2]
         sample['bg_coords'] = bg_coords
 
-        sample['pose'] = convert_poses(ngp_pose) # [B, 6]
-        sample['pose_matrix'] = ngp_pose # [B, 4, 4]
+
         return sample
     
     def __len__(self):

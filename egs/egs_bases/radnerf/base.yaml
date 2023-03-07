@@ -110,5 +110,6 @@ infer_c2w_name: ''
 infer_lm3d_clamp_std: 2.5
 infer_lm3d_lle_percent: 0. # percent of lle fused feature to compose the processed lm3d
 infer_lm3d_smooth_sigma: 0. # sigma of gaussian kernel to smooth the predicted lm3d
-infer_pose_smooth_sigma: 2.
 infer_bg_img_fname: '' # black, white, or a img fname
+infer_smooth_camera_path: true
+infer_smooth_camera_path_kernel_size: 7
