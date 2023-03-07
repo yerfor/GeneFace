@@ -82,7 +82,7 @@ class LM3dNeRFInfer(BaseNeRFInfer):
             # idexp_lm3d_normalized = convert_to_tensor(gaussian_filter1d(idexp_lm3d_normalized.numpy(), sigma=lm3d_smooth_sigma))
         
         # step4. inject eye blink
-        inject_eye_blink_mode = hparams.get("infer_inject_eye_blink_mode", "gt")
+        inject_eye_blink_mode = hparams.get("infer_inject_eye_blink_mode", "none")
         print(f"The eye blink mode is: {inject_eye_blink_mode}")
         if inject_eye_blink_mode == 'none':
             pass
