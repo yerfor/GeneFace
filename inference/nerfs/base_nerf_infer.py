@@ -16,10 +16,34 @@ from utils.commons.ddp_utils import DDP
 from utils.commons.hparams import hparams, set_hparams
 from utils.commons.ckpt_utils import load_ckpt, get_last_checkpoint
 from utils.commons.euler2rot import euler_trans_2_c2w, c2w_to_euler_trans
-from utils.commons.tensor_utils import move_to_cpu, move_to_cuda
+from utils.commons.tensor_utils import move_to_cpu, move_to_cuda, convert_to_tensor
 
 from tasks.nerfs.dataset_utils import NeRFDataset
 from scipy.ndimage import gaussian_filter1d
+from scipy.spatial.transform import Rotation
+
+
+def smooth_camera_path(poses, kernel_size=7):
+    # smooth the camera trajectory (i.e., translation)...
+    # poses: [N, 4, 4], numpy array
+    N = poses.shape[0]
+    K = kernel_size // 2
+    
+    trans = poses[:, :3, 3].copy() # [N, 3]
+    rots = poses[:, :3, :3].copy() # [N, 3, 3]
+
+    for i in range(N):
+        start = max(0, i - K)
+        end = min(N, i + K + 1)
+        poses[i, :3, 3] = trans[start:end].mean(0)
+        try:
+            poses[i, :3, :3] = Rotation.from_matrix(rots[start:end]).mean().as_matrix()
+        except:
+            if i == 0:
+                poses[i, :3, :3] = rots[i]
+            else:
+                poses[i, :3, :3] = poses[i-1, :3, :3]
+    return poses
 
 
 class BaseNeRFInfer:
@@ -219,30 +243,14 @@ class BaseNeRFInfer:
             sample['trans_t0'] = torch.tensor(np.ascontiguousarray(trans_t0)).float()
             
         if hparams.get("infer_smo_head_pose", True) is True:
-
-            euler_arr = torch.stack([s['euler'] for s in samples]).numpy()
-            trans_arr = torch.stack([s['trans'] for s in samples]).numpy()
-            headpose = np.concatenate([euler_arr, trans_arr], axis=1) # [N,6]
-
-            smo_sigmas = [hparams['infer_pose_smooth_sigma'], hparams['infer_pose_smooth_sigma']]
-            smo_headpose = self.headpose_smooth(headpose, smo_sigmas)
-            smo_euler_arr, smo_trans_arr = smo_headpose[:,:3],  smo_headpose[:,3:]
+            c2w_arr = torch.stack([s['c2w'] for s in samples]).numpy()
+            smo_c2w_arr = smooth_camera_path(c2w_arr)
             for i, sample in enumerate(samples):
-                sample['euler'] = torch.tensor(np.ascontiguousarray(smo_euler_arr[i])).float()
-                sample['trans'] = torch.tensor(np.ascontiguousarray(smo_trans_arr[i])).float()
-                sample['c2w'] = euler_trans_2_c2w(sample['euler'], sample['trans'])
-
+                sample['c2w'] = convert_to_tensor(smo_c2w_arr[i])
+                euler, trans = c2w_to_euler_trans(sample['c2w'])
+                sample['euler'] = convert_to_tensor(np.ascontiguousarray(euler))
+                sample['trans'] = convert_to_tensor(np.ascontiguousarray(trans))
         return samples
-
-    def headpose_smooth(self, headpose, smooth_sigmas):
-        """
-        head_pose: [T, 3+3], torch.cat([euler, trans],dim=1)
-        """
-        rot_sigma, trans_sigma = smooth_sigmas
-        rot = gaussian_filter1d(headpose.reshape(-1, 6)[:,:3], rot_sigma, axis=0).reshape(-1, 3)
-        trans = gaussian_filter1d(headpose.reshape(-1, 6)[:,3:], trans_sigma, axis=0).reshape(-1, 3)
-        headpose_smooth = np.concatenate([rot, trans], axis=1)
-        return headpose_smooth
 
     def postprocess_output(self, output):
         tmp_imgs_dir = self.inp['tmp_imgs_dir']
