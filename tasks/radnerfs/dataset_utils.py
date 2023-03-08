@@ -72,7 +72,7 @@ class RADNeRFDataset(torch.utils.data.Dataset):
                 bg_img = cv2.resize(bg_img, (self.W, self.H), interpolation=cv2.INTER_AREA)
             bg_img = cv2.cvtColor(bg_img, cv2.COLOR_BGR2RGB)
             bg_img = bg_img.astype(np.float32) / 255 # [H, W, 3/4]
-        self.bg_img = bg_img
+        self.bg_img = convert_to_tensor(bg_img)
 
         self.idexp_lm3d_mean = torch.from_numpy(ds_dict['idexp_lm3d_mean']).float()
         self.idexp_lm3d_std = torch.from_numpy(ds_dict['idexp_lm3d_std']).float()
@@ -83,7 +83,7 @@ class RADNeRFDataset(torch.utils.data.Dataset):
         if not training and hparams['infer_smooth_camera_path']:
             smo_poses = smooth_camera_path(self.poses.numpy(), kernel_size=hparams['infer_smooth_camera_path_kernel_size'])
             self.poses = torch.from_numpy(smo_poses)
-            print(f"Smooth head trajectory (translation) with a window size of {hparams['infer_smooth_camera_path_kernel_size']}")
+            print(f"Smooth head trajectory (rotation and translation) with a window size of {hparams['infer_smooth_camera_path_kernel_size']}")
         self.bg_coords = get_bg_coords(self.H, self.W, 'cpu') # [1, H*W, 2] in [-1, 1]
 
         if self.cond_type == 'deepspeech':
