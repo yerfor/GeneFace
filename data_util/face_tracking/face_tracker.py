@@ -55,6 +55,7 @@ sel_num = sel_ids.shape[0]
 arg_focal = 1600
 arg_landis = 1e5
 
+best_loss_focal = 99999
 for focal in range(600, 1700, 100):
     id_para = lms.new_zeros((1, id_dim), requires_grad=True)
     exp_para = lms.new_zeros((sel_num, exp_dim), requires_grad=True)
@@ -69,6 +70,7 @@ for focal in range(600, 1700, 100):
     optimizer_frame = torch.optim.Adam(
         [euler_angle, trans], lr=.1)
 
+    best_loss_i = 99999
     for iter in range(2000):
         id_para_batch = id_para.expand(sel_num, -1)
         geometry = model_3dmm.get_3dlandmarks(
@@ -95,6 +97,8 @@ for focal in range(600, 1700, 100):
         loss_regid = torch.mean(id_para*id_para)
         loss_regexp = torch.mean(exp_para*exp_para)
         loss = loss_lan + loss_regid*0.5 + loss_regexp*0.4
+        if loss_lan.item() < best_loss_i:
+            best_loss_i = loss_lan.item()
         optimizer_idexp.zero_grad()
         optimizer_frame.zero_grad()
         loss.backward()
@@ -108,11 +112,16 @@ for focal in range(600, 1700, 100):
                 param_group['lr'] *= 0.2
             for param_group in optimizer_frame.param_groups:
                 param_group['lr'] *= 0.2
-    print(focal, loss_lan.item(), torch.mean(trans[:, 2]).item())
+    print(focal, "loss_lan=",best_loss_i, "mean_xy_trans=",torch.mean(trans[:, 2]).item())
+    with open('log.txt', 'a') as f:
+        f.write("\n"+str(focal)+ ",loss_lan=_"+str(best_loss_i)+ ",mean_xy_trans="+str(torch.mean(trans[:, 2]).item()))
 
-    if loss_lan.item() < arg_landis:
-        arg_landis = loss_lan.item()
+    if best_loss_i < best_loss_focal:
+        best_loss_focal = best_loss_i
         arg_focal = focal
+    # if loss_lan.item() < arg_landis:
+    #     arg_landis = loss_lan.item()
+    #     arg_focal = focal
 
 print('find best focal', arg_focal)
 
@@ -155,6 +164,12 @@ for param_group in optimizer_frame.param_groups:
     param_group['lr'] = 0.1
 
 # 同时训练id、exp和euler、trans
+best_loss = 9999
+best_id_params=None
+best_exp_params=None
+best_euler=None
+best_trans=None
+
 for iter in range(2000):
     id_para_batch = id_para.expand(num_frames, -1)
     geometry = model_3dmm.get_3dlandmarks(
@@ -168,6 +183,12 @@ for iter in range(2000):
     loss = loss_lan + loss_regid*0.5 + loss_regexp*0.4
     optimizer_idexp.zero_grad()
     optimizer_frame.zero_grad()
+    if loss_lan.item() < best_loss:
+        best_loss = loss_lan.item()
+        best_id_params = id_para.clone()
+        best_exp_params = exp_para.clone()
+        best_euler = euler_angle.clone()
+        best_trans = trans.clone()
     loss.backward()
     optimizer_idexp.step()
     optimizer_frame.step()
@@ -179,7 +200,21 @@ for iter in range(2000):
             param_group['lr'] *= 0.2
         for param_group in optimizer_frame.param_groups:
             param_group['lr'] *= 0.2
-print(loss_lan.item(), torch.mean(trans[:, 2]).item())
+print("trained on focal=",arg_focal, "best_loss_lan=",best_loss, "mean_xy_trans=",torch.mean(trans[:, 2]).item())
+with open('log.txt', 'a') as f:
+    f.write("\ntrained on focal="+str(arg_focal)+ "best_loss_lan="+str(best_loss)+"mean_xy_trans="+str(torch.mean(trans[:, 2]).item()))
+
+id_para = lms.new_zeros((1, id_dim), requires_grad=True)
+id_para.data = best_id_params.data.clone()
+exp_para = lms.new_zeros((num_frames, exp_dim), requires_grad=True)
+exp_para.data = best_exp_params.data.clone()
+tex_para = lms.new_zeros((1, tex_dim), requires_grad=True)
+euler_angle = lms.new_zeros((num_frames, 3), requires_grad=True)
+euler_angle.data = best_euler.data.clone()
+trans = lms.new_zeros((num_frames, 3), requires_grad=True)
+trans.data = best_trans.data.clone()
+light_para = lms.new_zeros((num_frames, 27), requires_grad=True)
+
 
 batch_size = 50
 
@@ -331,9 +366,12 @@ for i in range(int((num_frames-1)/batch_size+1)):
         if iter > 30:
             loss = loss_col*0.5 + loss_lan*1.5 + loss_lap*100000 + loss_regexp*1.0
         optimizer_cur_batch.zero_grad()
+        # print(f"i={i},iter={iter},loss_col={loss_col},loss_lan={loss_lan},loss_lap={loss_lap},loss_regexp={loss_regexp}")
         loss.backward()
         optimizer_cur_batch.step()
-        #print(i, iter, loss_col.item(), loss_lan.item(), loss_lap.item(), loss_regexp.item())
+        # print(i, iter, loss_col.item(), loss_lan.item(), loss_lap.item(), loss_regexp.item())
+        with open('log.txt', 'a') as f:
+            f.write(f"\ni={i},iter={iter},loss_col={loss_col},loss_lan={loss_lan},loss_lap={loss_lap},loss_regexp={loss_regexp}")
     print(str(i) + ' of ' + str(int((num_frames-1)/batch_size+1)) + ' done')
     render_proj = sel_imgs.clone()
     render_proj[mask] = render_imgs[mask][..., :3].byte()

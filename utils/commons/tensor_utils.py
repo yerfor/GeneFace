@@ -32,7 +32,9 @@ def tensors_to_scalars(tensors):
 
 
 def convert_to_np(tensors):
-    if isinstance(tensors, dict):
+    if isinstance(tensors, np.ndarray):
+        return tensors
+    elif isinstance(tensors, dict):
         new_np = {}
         for k, v in tensors.items():
             if isinstance(v, torch.Tensor):

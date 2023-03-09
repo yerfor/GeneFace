@@ -24,3 +24,5 @@ lpips
 pyaudio
 ninja
 setuptools=59.5.0
+kornia==0.5.0
+moviepy

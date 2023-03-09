@@ -122,8 +122,10 @@ class Render_3DMM(nn.Module):
         sigma = 1e-4
         raster_settings = RasterizationSettings(
             image_size=(self.img_h, self.img_w),
-            blur_radius=np.log(1. / 1e-4 - 1.)*sigma / 18.0,
-            faces_per_pixel=2,
+            # blur_radius=np.log(1. / 1e-4 - 1.)*sigma / 18.0,
+            blur_radius=0,
+            # faces_per_pixel=2,
+            faces_per_pixel=1,
             perspective_correct=False,
         )
         blend_params = blending.BlendParams(background_color=[0, 0, 0])
@@ -186,7 +188,8 @@ class Render_3DMM(nn.Module):
         face_color = TexturesVertex(face_color)
         mesh = Meshes(rott_geometry, self.tris.float().repeat(
             rott_geometry.shape[0], 1, 1), face_color)
-        rendered_img = self.renderer(mesh)
+        # rendered_img = self.renderer(mesh) # , eps=1e-8
+        rendered_img = self.renderer(mesh, eps=1e-4) # 
         rendered_img = torch.clamp(rendered_img, 0, 255)
 
         return rendered_img
