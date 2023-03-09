@@ -12,6 +12,10 @@
 
 我们的GeneFace对域外音频（如不同说话人、不同语种的音频）实现了更好的嘴唇同步和表现力。推荐您观看[此视频](https://geneface.github.io/GeneFace/example_show_improvement.mp4)，以了解GeneFace与之前基于NeRF的虚拟人合成方法的口型同步能力对比。您也可以访问我们的[项目页面](https://geneface.github.io/)以了解更多详细信息。
 
+# 👷 本仓库还在建设中 ...
+还在路上的提升:
+- 利用RAD-NeRF提升现有原始NeRF的效率，实现实时渲染。
+- 将目前基于Tensorflow的Deep_3dRecon模块替换为基于Pytorch的，以适配RTX3090等较新的GPU。
 
 ## 🔥新闻:
 - `2023.3.7` 我们计划于5月1日释出GeneFace的升级版：`GeneFace-S`. 相比起当前版本的GeneFace，升级版能够提供更加准确和稳定的嘴形；训练时间能够缩短4倍；并且能够在RTX2080Ti上实现实时推理（25fps）！欢迎大家保持关注。
