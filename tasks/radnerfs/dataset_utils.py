@@ -80,6 +80,8 @@ class RADNeRFDataset(torch.utils.data.Dataset):
         fl_x = fl_y = self.focal
         self.intrinsics = np.array([fl_x, fl_y, self.cx, self.cy])
         self.poses = torch.from_numpy(np.stack([nerf_matrix_to_ngp(s['c2w'], scale=hparams['camera_scale'], offset=hparams['camera_offset']) for s in self.samples]))
+        if torch.any(torch.isnan(self.poses)):
+            raise ValueError("Found NaN in transform_matrix, please check the face_tracker process!")
         if not training and hparams['infer_smooth_camera_path']:
             smo_poses = smooth_camera_path(self.poses.numpy(), kernel_size=hparams['infer_smooth_camera_path_kernel_size'])
             self.poses = torch.from_numpy(smo_poses)
