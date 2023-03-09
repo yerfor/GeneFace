@@ -96,7 +96,7 @@ cond_out_dim: 64
 num_layers_ambient: 3
 hidden_dim_ambient: 128 # 64 by radnerf is too small
 ambient_out_dim: 2
-individual_embedding_num: 10000
+individual_embedding_num: 13000
 individual_embedding_dim: 4
 torso_individual_embedding_dim: 8
 

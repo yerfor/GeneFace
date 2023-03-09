@@ -1,0 +1,8 @@
+base_config:
+  - egs/egs_bases/radnerf/radnerf.yaml
+
+video_id: Obama2 # the video file should be located at `data/raw/videos/<video_id>.mp4`
+task_cls: tasks.radnerfs.radnerf_torso.RADNeRFTorsoTask
+head_model_dir: checkpoints/Obama2/radnerf
+
+torso_train_mode: 1
