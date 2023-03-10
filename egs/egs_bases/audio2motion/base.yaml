@@ -46,3 +46,4 @@ hidden_size: 256
 # infer-related
 infer_audio_source_name: ''
 infer_out_npy_name: ''
+infer_ckpt_steps: 40000
