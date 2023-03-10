@@ -1,0 +1,19 @@
+base_config:
+  - egs/egs_bases/radnerf/lm3d_radnerf.yaml
+
+video_id: May # the video file should be located at `data/raw/videos/<video_id>.mp4`
+individual_embedding_num: 10000 # should be equal or larger than the number of frames
+amp: true
+
+grid_type: hashgrid
+# to tune scale
+# https://github.com/NVlabs/instant-ngp/blob/master/docs/nerf_dataset_tips.md
+# https://github.com/ashawkey/torch-ngp/issues/112
+# The occupancy grid works fine in LEGO dataset. (~10x accelerated)
+# In my experiment (and on my dataset), I found that occupancy grid sampling is vulnerable to scale.
+# In specific scale range, the occ grid sampling works and accelerates rendering.
+# But outside of that range, the acceleration gain disappears, or it fails to converge at all.
+# (Without the occ grid sampling, the model has learned the scene in that scales.)
+# I think this is reasonable because covering the the camera-viewed region with a predefined grid 
+# is easier to fail than sampling without grids.
+# With an manual scale tuning, I can get the expected acceleration gain.

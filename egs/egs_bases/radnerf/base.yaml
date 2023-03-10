@@ -84,6 +84,8 @@ torso_shrink: 0.8 # shrink bg coords to allow more flexibility in deform
 smooth_lips: false
 
 # Network
+grid_type: tiledgrid # tiledgrid or hashgrid
+grid_interpolation_type: linear # smoothstep or linear
 with_att: true
 use_window_cond: true
 torso_head_aware: false # head aware torso nerf to avoid head-torso separation artifacts!

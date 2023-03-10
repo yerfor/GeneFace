@@ -74,7 +74,7 @@ class RADNeRFTorso(RADNeRF):
             h = torch.cat([h, head_color_weights_encoding],dim=-1)
 
         dx = self.torso_deform_net(h)
-        x = (x + dx).clamp(-1, 1)
+        x = (x + dx).clamp(-1, 1).float()
         x = self.torso_embedder(x, bound=1)
         h = torch.cat([x, h], dim=-1)
         h = self.torso_canonicial_net(h)

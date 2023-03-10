@@ -85,7 +85,7 @@ class RADNeRFDataset(torch.utils.data.Dataset):
         if not training and hparams['infer_smooth_camera_path']:
             smo_poses = smooth_camera_path(self.poses.numpy(), kernel_size=hparams['infer_smooth_camera_path_kernel_size'])
             self.poses = torch.from_numpy(smo_poses)
-            print(f"Smooth head trajectory (rotation and translation) with a window size of {hparams['infer_smooth_camera_path_kernel_size']}")
+            print(f"{prefix}: Smooth head trajectory (rotation and translation) with a window size of {hparams['infer_smooth_camera_path_kernel_size']}")
         self.bg_coords = get_bg_coords(self.H, self.W, 'cpu') # [1, H*W, 2] in [-1, 1]
 
         if self.cond_type == 'deepspeech':

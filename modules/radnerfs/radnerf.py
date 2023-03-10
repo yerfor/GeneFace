@@ -35,13 +35,15 @@ class RADNeRF(NeRFRenderer):
         # a ambient network that predict the 2D ambient coordinate
         # the ambient grid models the dynamic of canonical face
         # by predict ambient coords given cond_feat, we can be driven the face by either audio or landmark!
-        self.position_embedder, self.position_embedding_dim = get_encoder('tiledgrid', input_dim=3, num_levels=16, level_dim=2, base_resolution=16, log2_hashmap_size=hparams['log2_hashmap_size'], desired_resolution=hparams['desired_resolution'] * self.bound)
+        self.grid_type = hparams['grid_type'] # tiledgrid or hashgrid
+        self.grid_interpolation_type = hparams['grid_interpolation_type'] # smoothstep or linear
+        self.position_embedder, self.position_embedding_dim = get_encoder(self.grid_type, input_dim=3, num_levels=16, level_dim=2, base_resolution=16, log2_hashmap_size=hparams['log2_hashmap_size'], desired_resolution=hparams['desired_resolution'] * self.bound, interpolation=self.grid_interpolation_type)
         self.num_layers_ambient = hparams['num_layers_ambient']
         self.hidden_dim_ambient = hparams['hidden_dim_ambient']
         self.ambient_out_dim = hparams['ambient_out_dim']
         self.ambient_net = MLP(self.position_embedding_dim + self.cond_out_dim, self.ambient_out_dim, self.hidden_dim_ambient, self.num_layers_ambient)
         # the learnable ambient grid
-        self.ambient_embedder, self.ambient_embedding_dim = get_encoder('tiledgrid', input_dim=hparams['ambient_out_dim'], num_levels=16, level_dim=2, base_resolution=16, log2_hashmap_size=hparams['log2_hashmap_size'], desired_resolution=hparams['desired_resolution'])
+        self.ambient_embedder, self.ambient_embedding_dim = get_encoder(self.grid_type, input_dim=hparams['ambient_out_dim'], num_levels=16, level_dim=2, base_resolution=16, log2_hashmap_size=hparams['log2_hashmap_size'], desired_resolution=hparams['desired_resolution'], interpolation=self.grid_interpolation_type)
 
         # sigma network
         self.num_layers_sigma = hparams['num_layers_sigma']
@@ -80,7 +82,7 @@ class RADNeRF(NeRFRenderer):
 
         # ambient
         ambient_inp = torch.cat([pos_feat, cond_feat], dim=1) # audio feat and spatial feat 
-        ambient_logit = self.ambient_net(ambient_inp) # the MLP after AFE in paper
+        ambient_logit = self.ambient_net(ambient_inp).float() # the MLP after AFE in paper, use float(), prevent performance drop due to amp
         ambient_pos = torch.tanh(ambient_logit) # normalized to [-1, 1], act as the coordinate in the 2D ambient tilegrid
         ambient_feat = self.ambient_embedder(ambient_pos, bound=1) # E^2_{audio} in paper, 2D grid
 
@@ -111,7 +113,7 @@ class RADNeRF(NeRFRenderer):
 
         # ambient
         ambient_inp = torch.cat([pos_feat, cond_feat], dim=1) # audio feat and spatial feat 
-        ambient_logit = self.ambient_net(ambient_inp) # the MLP after AFE in paper
+        ambient_logit = self.ambient_net(ambient_inp).float() # the MLP after AFE in paper, use float(), prevent performance drop due to amp
         ambient_pos = torch.tanh(ambient_logit) # normalized to [-1, 1], act as the coordinate in the 2D ambient tilegrid
         ambient_feat = self.ambient_embedder(ambient_pos, bound=1) # E^2_{audio} in paper, 2D grid
 
