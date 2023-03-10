@@ -31,11 +31,11 @@ def process_video(fname, out_name=None):
     if out_name is None:
         out_name = fname[:-4] + '.npy'
     tmp_name = out_name[:-4] + '.doi'
-    if os.path.exists(tmp_name):
-        print("tmp exist, skip")
-        return
+    # if os.path.exists(tmp_name):
+    #     print("tmp exist, skip")
+    #     return
     if os.path.exists(out_name):
-        print("out exisit, skip")
+        # print("out exisit, skip")
         return
     os.system(f"touch {tmp_name}")
     cap = cv2.VideoCapture(fname)
@@ -51,11 +51,11 @@ def process_video(fname, out_name=None):
         try:
             lm68 = fa.get_landmarks(frame_rgb)[0] # 识别图片中的人脸，获得角点, shape=[68,2]
         except:
-            # print(f"Skip Item: Caught errors when fa.get_landmarks, maybe No face detected in some frames in {fname}!")
-            print(f"Caught error at {cnt}")
+            print(f"Skip Item: Caught errors when fa.get_landmarks, maybe No face detected in some frames in {fname}!")
+            # print(f"Caught error at {cnt}")
             cnt +=1
-            # return None
-            continue
+            return None
+            # continue
         lm5 = lm68_2_lm5(lm68)
         lm68_lst.append(lm68)
         lm5_lst.append(lm5)
@@ -69,7 +69,7 @@ def process_video(fname, out_name=None):
     iter_times = num_frames // batch_size
     last_bs = num_frames % batch_size
     coeff_lst = []
-    for i_iter in trange(iter_times):
+    for i_iter in range(iter_times):
         start_idx = i_iter * batch_size
         batched_images = video_bgr[start_idx: start_idx + batch_size]
         batched_lm5 = lm5_arr[start_idx: start_idx + batch_size]
@@ -108,12 +108,25 @@ if __name__ == '__main__':
     # process_video(video_fname, out_fname)
 
     ### Process short video clips for LRS3 dataset
+    from argparse import ArgumentParser
+    parser = ArgumentParser()
+    parser.add_argument('--process_id', type=int, default=0, help='')
+    parser.add_argument('--total_process', type=int, default=1, help='')
+    args = parser.parse_args()
+
     import os, glob
     lrs3_dir = "/home/yezhenhui/datasets/raw/lrs3_raw"
     mp4_name_pattern = os.path.join(lrs3_dir, "*/*.mp4")
     mp4_names = glob.glob(mp4_name_pattern)
     mp4_names = sorted(mp4_names)
+    if args.total_process > 1:
+        assert args.process_id <= args.total_process-1
+        num_samples_per_process = len(mp4_names) // args.total_process
+        if args.process_id == args.total_process-1:
+            mp4_names = mp4_names[args.process_id * num_samples_per_process : ]
+        else:
+            mp4_names = mp4_names[args.process_id * num_samples_per_process : (args.process_id+1) * num_samples_per_process]
     for mp4_name in tqdm(mp4_names, desc='extracting 3DMM...'):
         split_wav(mp4_name)
-        process_video(mp4_name)
+        process_video(mp4_name,out_name=mp4_name.replace(".mp4", "_coeff_pt.npy"))
 
