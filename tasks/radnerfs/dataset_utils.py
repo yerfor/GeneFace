@@ -172,11 +172,16 @@ class RADNeRFDataset(torch.utils.data.Dataset):
             'gt_img': raw_sample['gt_img'].float() / 255.,
         })
         
-        if self.training and self.finetune_lip_flag:
-            # the finetune_lip_flag is controlled by the task that use this dataset 
-            rays = get_rays(ngp_pose.cuda(), self.intrinsics, self.H, self.W, N=-1, rect=sample['lip_rect'])
+        if self.training:
+            if self.finetune_lip_flag:
+                # the finetune_lip_flag is controlled by the task that use this dataset 
+                rays = get_rays(ngp_pose.cuda(), self.intrinsics, self.H, self.W, N=-1, rect=sample['lip_rect'])
+            else:
+                # training phase
+                rays = get_rays(ngp_pose.cuda(), self.intrinsics, self.H, self.W, N=self.num_rays, rect=None)
         else:
-            rays = get_rays(ngp_pose.cuda(), self.intrinsics, self.H, self.W, N=self.num_rays)
+            # inference phase
+            rays = get_rays(ngp_pose.cuda(), self.intrinsics, self.H, self.W, N=-1)
         sample['rays_o'] = rays['rays_o']
         sample['rays_d'] = rays['rays_d']
 

@@ -1,5 +1,7 @@
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
+
 import numpy as np
 import os
 import cv2
@@ -7,6 +9,7 @@ import lpips
 import matplotlib.pyplot as plt
 
 from modules.radnerfs.radnerf import RADNeRF
+from modules.radnerfs.utils import convert_poses, get_bg_coords, get_rays
 
 from utils.commons.image_utils import to8b
 from utils.commons.base_task import BaseTask
@@ -30,7 +33,10 @@ class RADNeRFTask(BaseTask):
 
         self.criterion_lpips = lpips.LPIPS(net='alex')
         self.finetune_lip_flag = False
-
+    
+    @property
+    def device(self):
+        return iter(self.model.parameters()).__next__().device
     def build_model(self):
         self.model = RADNeRF(hparams)
         self.embedders_params = []
@@ -116,7 +122,7 @@ class RADNeRFTask(BaseTask):
         bg_coords = sample['bg_coords'] # [1, N, 2]
         poses = sample['pose'] # [B, 6]
         idx = sample['idx'] # [B]
-        bg_color = sample['bg_torso_img'] # treat torso as a part of background
+        bg_color = sample['bg_torso_img'] if 'bg_torso_img' in sample else sample['bg_img'] # treat torso as a part of background
         H, W = sample['H'], sample['W']
 
         cond_inp = cond_wins
@@ -322,4 +328,84 @@ class RADNeRFTask(BaseTask):
         else:
             # gray image
             cv2.imwrite(f"{fname}", rgb)
+
+    ### GUI utils
+    def test_gui_with_editable_data(self, pose, intrinsics, W, H, cond_wins, index=0, bg_color=None, spp=1, downscale=1):
+    # def test_gui_with_edited_data(self, pose, intrinsics, W, H, cond_wins, index=0, bg_color=None, downscale=1):
+        # render resolution (may need downscale to for better frame rate)
+        rH = int(H * downscale)
+        rW = int(W * downscale)
+        intrinsics = intrinsics * downscale
+
+        cond_wins = cond_wins.cuda()
+        pose = torch.from_numpy(pose).unsqueeze(0).cuda()
+        rays = get_rays(pose, intrinsics, rH, rW, -1)
+        bg_coords = get_bg_coords(rH, rW, 'cuda:0')
+
+        sample = {
+            'rays_o': rays['rays_o'].cuda(),
+            'rays_d': rays['rays_d'].cuda(),
+            'H': rH,
+            'W': rW,
+            'cond_wins': cond_wins,
+            'idx': [index], # support choosing index for individual codes
+            'pose': convert_poses(pose),
+            'bg_coords': bg_coords,
+            'bg_img': bg_color.cuda()
+        }
+
+        self.model.eval()
+        with torch.no_grad():
+            with torch.cuda.amp.autocast(enabled=hparams['amp']):
+                # here spp is used as perturb random seed!
+                # face: do not perturb for the first spp, else lead to scatters.
+                infer_outputs = self.run_model(sample, infer=True)
+            preds = infer_outputs['rgb_map'].reshape([1,rH, rW, 3])
+            preds_depth = infer_outputs['depth_map'].reshape([1, rH, rW])
+
+        # interpolation to the original resolution
+        if downscale != 1:
+            # TODO: have to permute twice with torch...
+            preds = F.interpolate(preds.permute(0, 3, 1, 2), size=(H, W), mode='bilinear').permute(0, 2, 3, 1).contiguous()
+            preds_depth = F.interpolate(preds_depth.unsqueeze(1), size=(H, W), mode='nearest').squeeze(1)
+
+        pred = preds[0].detach().cpu().numpy()
+        pred_depth = preds_depth[0].detach().cpu().numpy()
+
+        outputs = {
+            'image': pred,
+            'depth': pred_depth,
+        }
+
+        return outputs
+
+    # [GUI] test with provided data
+    def test_gui_with_data(self, sample, target_W, target_H):
+        # prevent calculate loss, which increase costs.
+        del sample['gt_img']
+        del sample['lip_rect']
+
+        self.model.eval()
+        with torch.no_grad():
+            with torch.cuda.amp.autocast(enabled=hparams['amp']):
+                # here spp is used as perturb random seed!
+                # face: do not perturb for the first spp, else lead to scatters.
+                infer_outputs = self.run_model(sample, infer=True)
+        H, W = sample['H'], sample['W']
+        preds = infer_outputs['rgb_map'].reshape([1,H, W, 3])
+        preds_depth = infer_outputs['depth_map'].reshape([1,H, W])
+
+        # the H/W in data may be differnt to GUI, so we still need to resize...
+        preds = F.interpolate(preds.permute(0, 3, 1, 2), size=(target_H, target_W), mode='bilinear').permute(0, 2, 3, 1).contiguous()
+        preds_depth = F.interpolate(preds_depth.unsqueeze(1), size=(target_H, target_W), mode='nearest').squeeze(1)
+
+        pred = preds[0].detach().cpu().numpy()
+        pred_depth = preds_depth[0].detach().cpu().numpy()
+
+        outputs = {
+            'image': pred,
+            'depth': pred_depth,
+        }
+
+        return outputs
 
