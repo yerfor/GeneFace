@@ -41,7 +41,15 @@ class OrbitCamera:
         # translate
         res[:3, 3] -= self.center
         return res
-
+    
+    @property
+    def euler(self):
+        return self.rot.as_euler("xyz")
+    
+    @property
+    def trans(self):
+        return self.center
+    
     def update_pose(self, pose):
         # pose: [4, 4] numpy array
         # assert self.center is 0
@@ -100,6 +108,9 @@ class NeRFGUI:
         # use dataloader's pose
         pose_init = dataset.poses[0]
         self.cam.update_pose(pose_init.detach().cpu().numpy())
+        self.rot_t0 = copy.deepcopy(self.cam.rot.as_matrix())
+        self.euler_t0 = copy.deepcopy(self.cam.rot.as_euler('xyz'))
+        self.trans_t0 = copy.deepcopy(self.cam.pose[:3,3:]).reshape([3,])
 
         # use dataloader's bg
         bg_img = dataset.bg_img #.view(1, -1, 3)
@@ -345,7 +356,16 @@ class NeRFGUI:
             #         with dpg.group(horizontal=True):
             #             dpg.add_text("", tag="_log_train_log")
 
-            
+            # debug info
+            if self.debug:
+                with dpg.collapsing_header(label="Debug"):
+                    # pose
+                    dpg.add_separator()
+                    dpg.add_text("Camera Pose:")
+                    dpg.add_text(str(self.cam.pose), tag="_log_pose")
+                    dpg.add_text(str(self.cam.euler), tag="_log_euler")
+                    dpg.add_text(str(self.cam.trans), tag="_log_trans")
+
             # rendering options
             with dpg.collapsing_header(label="Options", default_open=True):
                 
@@ -426,6 +446,7 @@ class NeRFGUI:
 
                     dpg.add_slider_int(label="Individual", min_value=0, max_value=self.ind_num - 1, format="%d", default_value=self.ind_index, callback=callback_set_individual_code)
 
+
                 # eye area slider
                 # if self.opt.exp_eye:
                 #     def callback_set_eye(sender, app_data):
@@ -480,15 +501,56 @@ class NeRFGUI:
                     dpg.add_slider_float(label="z", width=150, min_value=-self.hparams['bound'], max_value=0, format="%.2f", default_value=-self.hparams['bound'], callback=callback_set_aabb, user_data=2)
                     dpg.add_slider_float(label="", width=150, min_value=0, max_value=self.hparams['bound'], format="%.2f", default_value=self.hparams['bound'], callback=callback_set_aabb, user_data=5)
                 
+                dpg.add_separator()
+                dpg.add_text("Euler Angle and Translation:")
 
-            # debug info
-            if self.debug:
-                with dpg.collapsing_header(label="Debug"):
-                    # pose
-                    dpg.add_separator()
-                    dpg.add_text("Camera Pose:")
-                    dpg.add_text(str(self.cam.pose), tag="_log_pose")
+                def callback_reset_pose(sender, app_data):
+                    dpg.set_value('Euler_X_offset', 0)
+                    dpg.set_value('Euler_Y_offset', 0)
+                    dpg.set_value('Euler_Z_offset', 0)
+                    dpg.set_value('Trans_X_offset', 0)
+                    dpg.set_value('Trans_Y_offset', 0)
+                    dpg.set_value('Trans_Z_offset', 0)
+                    callback_set_euler(sender, 0, 0)
+                    callback_set_euler(sender, 0, 1)
+                    callback_set_euler(sender, 0, 2)
+                    callback_set_trans(sender, 0, 0)
+                    callback_set_trans(sender, 0, 1)
+                    callback_set_trans(sender, 0, 2)
+                    self.need_update = True
 
+                dpg.add_button(label="reset pose", tag="_button_reset_pose", callback=callback_reset_pose)
+                dpg.bind_item_theme("_button_reset_pose", theme_button)
+                
+                def update_log_pose():
+                    dpg.set_value("_log_pose", str(self.cam.pose))
+                    dpg.set_value("_log_euler", str(self.cam.euler))
+                    dpg.set_value("_log_trans", str(self.cam.trans))
+
+                def callback_set_euler(sender, app_data,user_data):
+                    d_euler = app_data
+                    euler_t = copy.deepcopy(self.euler_t0)
+                    euler_t[user_data] = euler_t[user_data] + d_euler
+                    self.cam.rot = R.from_euler('xyz',euler_t)
+                    self.need_update = True
+                    update_log_pose()
+
+                dpg.add_slider_float(tag="Euler_X_offset",label="Euler_X_offset", min_value=-0.5, max_value=0.5, format="%.5f", default_value=0, callback=callback_set_euler, user_data=0)
+                dpg.add_slider_float(tag="Euler_Y_offset",label="Euler_Y_offset", min_value=-0.5, max_value=0.5, format="%.5f", default_value=0, callback=callback_set_euler, user_data=1)
+                dpg.add_slider_float(tag="Euler_Z_offset",label="Euler_Z_offset", min_value=-0.5, max_value=0.5, format="%.5f", default_value=0, callback=callback_set_euler, user_data=2)
+
+                def callback_set_trans(sender, app_data, user_data):
+                    trans_x = app_data
+                    trans_t_ = self.trans_t0[user_data] + trans_x
+                    new_pose = copy.deepcopy(self.cam.pose)
+                    new_pose[user_data, 3] = trans_t
+                    self.cam.update_pose(pose)
+                    self.need_update = True
+                    update_log_pose()
+
+                dpg.add_slider_float(tag="Trans_X_offset",label="Trans_X_offset", min_value=-1, max_value=1, format="%.5f", default_value=0, callback=callback_set_trans,user_data=0)
+                dpg.add_slider_float(tag="Trans_Y_offset",label="Trans_Y_offset", min_value=-1, max_value=1, format="%.5f", default_value=0, callback=callback_set_trans,user_data=1)
+                dpg.add_slider_float(tag="Trans_Z_offset",label="Trans_Z_offset", min_value=-1, max_value=1, format="%.5f", default_value=0, callback=callback_set_trans,user_data=2)
 
         ### register camera handler
 
