@@ -146,23 +146,24 @@ class RADNeRFDataset(torch.utils.data.Dataset):
             'bg_img': self.bg_img,
         }
 
-        if self.cond_type == 'deepspeech':
-            sample.update({
-                'cond_win': raw_sample['deepspeech_win'].unsqueeze(0), # [B=1, T=16, C=29]
-                'cond_wins': raw_sample['deepspeech_wins'], # [Win=8, T=16, C=29]
-            })
-        elif self.cond_type == 'esperanto':
-            sample.update({
-                'cond_win': raw_sample['esperanto_win'].unsqueeze(0), # [B=1, T=16, C=29]
-                'cond_wins': raw_sample['esperanto_wins'], # [Win=8, T=16, C=29]
-            })
-        elif self.cond_type == 'idexp_lm3d_normalized':
-            sample['cond'] = raw_sample['idexp_lm3d_normalized'].reshape([1,-1]) # [1, 204]
-            sample['cond_win'] = raw_sample['idexp_lm3d_normalized_win'].reshape([1, hparams['cond_win_size'],-1]) # [1, T_win, 204]
-            sample['cond_wins'] = raw_sample['idexp_lm3d_normalized_wins'].reshape([hparams['smo_win_size'], hparams['cond_win_size'],-1]) # [smo_win, T_win, 204]
-        else:
-            raise NotImplementedError
-        
+        # if self.cond_type == 'deepspeech':
+        #     sample.update({
+        #         'cond_win': raw_sample['deepspeech_win'].unsqueeze(0), # [B=1, T=16, C=29]
+        #         'cond_wins': raw_sample['deepspeech_wins'], # [Win=8, T=16, C=29]
+        #     })
+        # elif self.cond_type == 'esperanto':
+        #     sample.update({
+        #         'cond_win': raw_sample['esperanto_win'].unsqueeze(0), # [B=1, T=16, C=29]
+        #         'cond_wins': raw_sample['esperanto_wins'], # [Win=8, T=16, C=29]
+        #     })
+        # elif self.cond_type == 'idexp_lm3d_normalized':
+        #     sample['cond'] = raw_sample['idexp_lm3d_normalized'].reshape([1,-1]) # [1, 204]
+        #     sample['cond_win'] = raw_sample['idexp_lm3d_normalized_win'].reshape([1, hparams['cond_win_size'],-1]) # [1, T_win, 204]
+        #     sample['cond_wins'] = raw_sample['idexp_lm3d_normalized_wins'].reshape([hparams['smo_win_size'], hparams['cond_win_size'],-1]) # [smo_win, T_win, 204]
+        # else:
+        #     raise NotImplementedError
+        sample['cond_wins'] = get_audio_features(self.conds, att_mode=2, index=idx)
+
         ngp_pose = self.poses[idx].unsqueeze(0)
         sample['pose'] = convert_poses(ngp_pose) # [B, 6]
         sample['pose_matrix'] = ngp_pose # [B, 4, 4]
@@ -210,7 +211,6 @@ class RADNeRFDataset(torch.utils.data.Dataset):
         else:
             bg_coords = self.bg_coords # [1, N, 2]
         sample['bg_coords'] = bg_coords
-
 
         return sample
     
