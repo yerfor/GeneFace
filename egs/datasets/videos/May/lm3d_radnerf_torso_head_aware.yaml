@@ -4,7 +4,6 @@ base_config:
 video_id: May # the video file should be located at `data/raw/videos/<video_id>.mp4`
 task_cls: tasks.radnerfs.radnerf_torso.RADNeRFTorsoTask
 head_model_dir: checkpoints/May/lm3d_radnerf
-individual_embedding_num: 10000 # should be equal or larger than the number of frames
 
 torso_train_mode: 1
 torso_head_aware: true # head aware torso nerf to avoid head-torso separation artifacts!

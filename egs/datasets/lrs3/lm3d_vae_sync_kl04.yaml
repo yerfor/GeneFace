@@ -1,0 +1,6 @@
+base_config:
+  - egs/egs_bases/audio2motion/vae_sync.yaml
+
+syncnet_work_dir: checkpoints/lrs3/syncnet
+syncnet_ckpt_steps: 40000
+lambda_kl: 0.4

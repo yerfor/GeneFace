@@ -115,3 +115,10 @@ infer_lm3d_smooth_sigma: 0. # sigma of gaussian kernel to smooth the predicted l
 infer_bg_img_fname: '' # black, white, or a img fname
 infer_smooth_camera_path: true
 infer_smooth_camera_path_kernel_size: 7
+
+# gui feat
+gui_w: 512
+gui_h: 512
+gui_radius: 3.35
+gui_fovy: 21.24
+gui_max_spp: 1 # GUI rendering max sample per pixel
