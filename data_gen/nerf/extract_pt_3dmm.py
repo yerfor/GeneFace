@@ -31,12 +31,12 @@ def process_video(fname, out_name=None, skip_tmp=True):
     if out_name is None:
         out_name = fname[:-4] + '.npy'
     tmp_name = out_name[:-4] + '.doi'
-    if os.path.exists(tmp_name) and skip_tmp:
-        print("tmp exist, skip")
-        return
-    if os.path.exists(out_name):
-        print("out exisit, skip")
-        return
+    # if os.path.exists(tmp_name) and skip_tmp:
+    #     print("tmp exist, skip")
+    #     return
+    # if os.path.exists(out_name):
+    #     print("out exisit, skip")
+    #     return
     os.system(f"touch {tmp_name}")
     cap = cv2.VideoCapture(fname)
     lm68_lst = []
@@ -44,6 +44,7 @@ def process_video(fname, out_name=None, skip_tmp=True):
     frame_bgr_lst = []
     cnt = 0
     error_cnt = 0
+    print(f"extracting 2D facial landmarks ...")
     while cap.isOpened():
         ret, frame_bgr = cap.read()
         if frame_bgr is None:
@@ -52,11 +53,10 @@ def process_video(fname, out_name=None, skip_tmp=True):
         try:
             lm68 = fa.get_landmarks(frame_rgb)[0] # 识别图片中的人脸，获得角点, shape=[68,2]
         except:
-            # print(f"Skip Item: Caught errors when fa.get_landmarks, maybe No face detected in some frames in {fname}!")
-            print(f"Caught error at {cnt}")
+            print(f"WARNING: Caught errors when fa.get_landmarks, maybe No face detected at frame {cnt} in {fname}!")
+            lm68 = np.zeros([68,2])
+            lm5 = np.zeros([5,2])
             cnt +=1
-            error_cnt +=1
-            # return None
             continue
         lm5 = lm68_2_lm5(lm68)
         lm68_lst.append(lm68)

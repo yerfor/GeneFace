@@ -379,7 +379,7 @@ class LRS3SeqDataset(Dataset):
         shuffle = True if self.db_key == 'train' else False
         max_tokens = 60000
         batches_idx = self.batch_by_size(self.ordered_indices(), max_tokens=max_tokens)
-        loader = DataLoader(self, pin_memory=False,collate_fn=self.collater, batch_sampler=batches_idx, num_workers=8
+        loader = DataLoader(self, pin_memory=False,collate_fn=self.collater, batch_sampler=batches_idx, num_workers=8)
         return loader
 
 
