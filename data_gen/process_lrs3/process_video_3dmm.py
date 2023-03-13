@@ -34,14 +34,14 @@ def process_video(fname, out_name=None):
     # if os.path.exists(tmp_name):
     #     print("tmp exist, skip")
     #     return
-    if os.path.exists(out_name):
+    # if os.path.exists(out_name):
         # print("out exisit, skip")
-        return
+        # return
     os.system(f"touch {tmp_name}")
     cap = cv2.VideoCapture(fname)
     lm68_lst = []
     lm5_lst = []
-    frame_bgr_lst = []
+    frame_rgb_lst = []
     cnt = 0
     while cap.isOpened():
         ret, frame_bgr = cap.read()
@@ -59,9 +59,9 @@ def process_video(fname, out_name=None):
         lm5 = lm68_2_lm5(lm68)
         lm68_lst.append(lm68)
         lm5_lst.append(lm5)
-        frame_bgr_lst.append(frame_bgr)
+        frame_rgb_lst.append(frame_rgb)
         cnt += 1
-    video_bgr = np.stack(frame_bgr_lst) # [t, 224,224, 3]
+    video_rgb = np.stack(frame_rgb_lst) # [t, 224,224, 3]
     lm68_arr = np.stack(lm68_lst).reshape([cnt, 68, 2])
     lm5_arr = np.stack(lm5_lst).reshape([cnt, 5, 2])
     num_frames = cnt
@@ -71,12 +71,12 @@ def process_video(fname, out_name=None):
     coeff_lst = []
     for i_iter in range(iter_times):
         start_idx = i_iter * batch_size
-        batched_images = video_bgr[start_idx: start_idx + batch_size]
+        batched_images = video_rgb[start_idx: start_idx + batch_size]
         batched_lm5 = lm5_arr[start_idx: start_idx + batch_size]
         coeff, align_img = face_reconstructor.recon_coeff(batched_images, batched_lm5, return_image = True)
         coeff_lst.append(coeff)
     if last_bs != 0:
-        batched_images = video_bgr[-last_bs:]
+        batched_images = video_rgb[-last_bs:]
         batched_lm5 = lm5_arr[-last_bs:]
         coeff, align_img = face_reconstructor.recon_coeff(batched_images, batched_lm5, return_image = True)
         coeff_lst.append(coeff)

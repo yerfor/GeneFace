@@ -7,6 +7,13 @@ deep_3drecon/BFM/Exp_Pca.bin
 deep_3drecon/BFM/01_MorphableModel.mat
 deep_3drecon/BFM/BFM_model_front.mat
 deep_3drecon/network/FaceReconModel.pb
+
+deep_3drecon_pytorch/BFM/Exp_Pca.bin
+deep_3drecon_pytorch/BFM/01_MorphableModel.mat
+deep_3drecon_pytorch/BFM/BFM_model_front.mat
+deep_3drecon_pytorch/network/FaceReconModel.pb
+deep_3drecon_pytorch/checkpoints/*
+
 .vscode
 ### Project ignore
 /checkpoints/*

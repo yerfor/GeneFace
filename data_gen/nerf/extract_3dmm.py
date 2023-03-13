@@ -41,30 +41,26 @@ def process_video(fname, out_name=None, skip_tmp=True):
     cap = cv2.VideoCapture(fname)
     lm68_lst = []
     lm5_lst = []
-    frame_bgr_lst = []
+    frames = []
     cnt = 0
-    error_cnt = 0
-    print(f"extracting 2D facial landmarks ...")
+    print(f"loading video ...")
     while cap.isOpened():
         ret, frame_bgr = cap.read()
         if frame_bgr is None:
             break
         frame_rgb = cv2.cvtColor(frame_bgr, cv2.COLOR_BGR2RGB)
+        frames.append(frame_rgb)
+        cnt += 1
+    for i in trange(cnt, desc="extracting 2D facial landmarks ..."):
         try:
-            lm68 = fa.get_landmarks(frame_rgb)[0] # 识别图片中的人脸，获得角点, shape=[68,2]
+            lm68 = fa.get_landmarks(frames[i])[0] # 识别图片中的人脸，获得角点, shape=[68,2]
         except:
             print(f"WARNING: Caught errors when fa.get_landmarks, maybe No face detected at frame {cnt} in {fname}!")
-            lm68 = np.zeros([68,2])
-            lm5 = np.zeros([5,2])
-            cnt +=1
-            continue
+            raise ValueError("")
         lm5 = lm68_2_lm5(lm68)
         lm68_lst.append(lm68)
         lm5_lst.append(lm5)
-        frame_bgr_lst.append(frame_bgr)
-        cnt += 1
-    print(f"fa.get_landmarks done, error cnt: {error_cnt}/{cnt}!")
-    video_bgr = np.stack(frame_bgr_lst) # [t, 224,224, 3]
+    video_rgb = np.stack(frames) # [t, 224,224, 3]
     lm68_arr = np.stack(lm68_lst).reshape([cnt, 68, 2])
     lm5_arr = np.stack(lm5_lst).reshape([cnt, 5, 2])
     num_frames = cnt
@@ -72,15 +68,14 @@ def process_video(fname, out_name=None, skip_tmp=True):
     iter_times = num_frames // batch_size
     last_bs = num_frames % batch_size
     coeff_lst = []
-    print("start extracting 3DMM...")
-    for i_iter in trange(iter_times):
+    for i_iter in trange(iter_times, desc="start extracting 3DMM..."):
         start_idx = i_iter * batch_size
-        batched_images = video_bgr[start_idx: start_idx + batch_size]
+        batched_images = video_rgb[start_idx: start_idx + batch_size]
         batched_lm5 = lm5_arr[start_idx: start_idx + batch_size]
         coeff, align_img = face_reconstructor.recon_coeff(batched_images, batched_lm5, return_image = True)
         coeff_lst.append(coeff)
     if last_bs != 0:
-        batched_images = video_bgr[-last_bs:]
+        batched_images = video_rgb[-last_bs:]
         batched_lm5 = lm5_arr[-last_bs:]
         coeff, align_img = face_reconstructor.recon_coeff(batched_images, batched_lm5, return_image = True)
         coeff_lst.append(coeff)
