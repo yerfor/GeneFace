@@ -29,6 +29,55 @@ class LM3d_RADNeRFInfer(LM3dNeRFInfer):
             sample['W'] = ds_sample['W']
         return samples
 
+    def get_cond_from_input(self, inp):
+        """
+        :param inp: {'audio_source_name': (str), 'cond_name': (str, optional)}
+        :return: a list that contains the condition feature of NeRF
+        """
+        self.save_wav16k(inp)
+
+        # load the lm3d as the condition for lm3d head nerf
+        assert inp['cond_name'].endswith('.npy')
+        lm3d_arr = np.load(inp['cond_name'])[0] # [T, w=16, c=29]
+        idexp_lm3d = torch.from_numpy(lm3d_arr).float()
+        print(f"Loaded pre-extracted 3D landmark sequence from {inp['cond_name']}!")
+        idexp_lm3d_mean = self.dataset.idexp_lm3d_mean
+        idexp_lm3d_std = self.dataset.idexp_lm3d_std
+        idexp_lm3d_normalized = (idexp_lm3d.reshape([-1,68,3]) - idexp_lm3d_mean)/idexp_lm3d_std
+        
+        samples = [{} for _ in range(len(idexp_lm3d_normalized))]
+
+        _lambda_other = 0.35
+        _lambda_lip = 0.25
+        moving_lm = idexp_lm3d_normalized[0].clone()
+        for i in range(len(idexp_lm3d_normalized)):
+            idexp_lm3d_normalized[i,:48] = _lambda_other * moving_lm[:48] + (1 - _lambda_other) * idexp_lm3d_normalized[i,:48]
+            idexp_lm3d_normalized[i,48:68] = _lambda_lip * moving_lm[48:68] + (1 - _lambda_lip) * idexp_lm3d_normalized[i,48:68]
+        # step3. clamp the lm3d, to regularize apparent outliers
+        lm3d_clamp_std = hparams['infer_lm3d_clamp_std']
+        # idexp_lm3d_normalized[:,0:17] = torch.clamp(idexp_lm3d_normalized[:,0:17], -lm3d_clamp_std, lm3d_clamp_std) # yaw_x_y_z
+        # idexp_lm3d_normalized[:,17:27,0:2] = torch.clamp(idexp_lm3d_normalized[:,17:27,0:2], -lm3d_clamp_std/2, lm3d_clamp_std/2) # brow_x_y
+        # idexp_lm3d_normalized[:,17:27,2] = torch.clamp(idexp_lm3d_normalized[:,17:27,2], -lm3d_clamp_std, lm3d_clamp_std) # brow_z
+        # idexp_lm3d_normalized[:,27:36] = torch.clamp(idexp_lm3d_normalized[:,27:36], -lm3d_clamp_std, lm3d_clamp_std) # nose
+        # idexp_lm3d_normalized[:,36:48,0:2] = torch.clamp(idexp_lm3d_normalized[:,36:48,0:2], -lm3d_clamp_std/2, lm3d_clamp_std/2) # eye_x_y
+        # idexp_lm3d_normalized[:,36:48,2] = torch.clamp(idexp_lm3d_normalized[:,36:48,2], -lm3d_clamp_std, lm3d_clamp_std) # eye_z
+        idexp_lm3d_normalized[:,48:68] = torch.clamp(idexp_lm3d_normalized[:,48:68], -lm3d_clamp_std, lm3d_clamp_std) # mouth
+        idexp_lm3d_normalized = idexp_lm3d_normalized.reshape([-1,68*3])
+
+        # step4. LLE projection to drag the predicted lm3d closer to the GT lm3d
+        from data_gen.nerf.binarizer import get_win_conds
+        idexp_lm3d_normalized_numpy = idexp_lm3d_normalized.cpu().numpy()
+        idexp_lm3d_normalized_win_numpy = np.stack([get_win_conds(idexp_lm3d_normalized_numpy, i, smo_win_size=hparams['cond_win_size'], pad_option='edge') for i in range(idexp_lm3d_normalized_numpy.shape[0])])
+        idexp_lm3d_normalized_win = torch.from_numpy(idexp_lm3d_normalized_win_numpy)
+
+        for idx, sample in enumerate(samples):
+            sample['cond'] = idexp_lm3d_normalized[idx].unsqueeze(0)
+            if hparams['use_window_cond']:
+                sample['cond_win'] = idexp_lm3d_normalized_win[idx]
+                sample['cond_wins'] = torch.from_numpy(get_win_conds(idexp_lm3d_normalized_win_numpy, idx, hparams['smo_win_size'], 'edge'))
+        return samples
+
+
 
 if __name__ == '__main__':
     from utils.commons.hparams import set_hparams
