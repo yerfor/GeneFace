@@ -17,13 +17,12 @@ class LRS3SeqDataset(Dataset):
     def __init__(self, prefix='train'):
         self.db_key = prefix
         self.ds_path = hparams['binary_data_dir']
-        self.ds = IndexedDataset(os.path.join(self.ds_path, self.db_key))
+        self.ds = None
         self.sizes = None
         self.memory_cache = {} # we use hash table to accelerate indexing
         self.face3d_helper = Face3DHelper('data_util/BFM_models')
         self.x_multiply = 8
 
-        self.load_db_to_memory()
         self.get_stats()
         self.exp_mean = torch.from_numpy(self.stats_dict['exp_mean']).reshape([1,1,64])
         self.exp_std = torch.from_numpy(self.stats_dict['exp_std']).reshape([1,1,64])
@@ -40,10 +39,13 @@ class LRS3SeqDataset(Dataset):
         self.idexp_lm3d_std = torch.from_numpy(self.stats_dict['idexp_lm3d_std']).reshape([1,68*3])
         self.mouth_idexp_lm3d_mean = torch.from_numpy(self.stats_dict['mouth_idexp_lm3d_mean']).reshape([1,20*3])
         self.mouth_idexp_lm3d_std = torch.from_numpy(self.stats_dict['mouth_idexp_lm3d_std']).reshape([1,20*3])
-        self.load_sty_to_memory()
 
+    @property
+    def _sizes(self):
+        return self.sizes
+    
     def __len__(self):
-        return len(self.ds)
+        return len(self._sizes)
 
     def _cal_avatar_style_encoding(self, exp, pose):
         diff_exp = exp[:-1, :] - exp[1:, :]
@@ -156,7 +158,6 @@ class LRS3SeqDataset(Dataset):
         for idx in tqdm.trange(len(self), desc='Loading database to memory...'):
             raw_item = self.ds[idx]
             if raw_item is None:
-                print("loading from binary data failed!")
                 continue
             item = {}
             item_id = raw_item['item_id'] # str: "<speakerID>_<clipID>"
@@ -190,8 +191,50 @@ class LRS3SeqDataset(Dataset):
             
             self.memory_cache[idx] = item
 
+    def _get_item(self, index):
+        """
+        This func is necessary to open files in multi-threads!
+        """
+        if self.ds is None:
+            self.ds = IndexedDataset(f'{self.ds_path}/{self.db_key}')
+        return self.ds[index]
+    
     def __getitem__(self, idx):
-        item = self.memory_cache[idx]
+        raw_item = self._get_item(idx)
+        if raw_item is None:
+            print("loading from binary data failed!")
+            return None
+        item = {}
+        item_id = raw_item['item_id'] # str: "<speakerID>_<clipID>"
+        item['item_id'] = item_id
+        # audio-related features
+        mel = raw_item['mel']
+        hubert = raw_item['hubert']
+        item['mel'] = torch.from_numpy(mel).float() # [T_x, c=80]
+        item['hubert'] = torch.from_numpy(hubert).float() # [T_x, c=80]
+        if 'f0' in raw_item.keys():
+            f0 = raw_item['f0']
+            item['f0'] = torch.from_numpy(f0).float() # [T_x,]
+        # video-related features
+        coeff = raw_item['coeff'] # [T_y ~= T_x//2, c=257]
+        exp = coeff[:, 80:144] 
+        item['exp'] = torch.from_numpy(exp).float() # [T_y, c=64]
+        translation = coeff[:, 254:257] # [T_y, c=3]
+        angles = euler2quaterion(coeff[:, 224:227]) # # [T_y, c=4]
+        pose = np.concatenate([translation, angles], axis=1)
+        item['pose'] = torch.from_numpy(pose).float() # [T_y, c=4+3]
+
+        # Load identity for landmark construction
+        item['identity'] = torch.from_numpy(raw_item['coeff'][..., :80]).float()
+        
+        # Load lm3d
+        t_lm, dim_lm, _ = raw_item['idexp_lm3d'].shape # [T, 68, 3]
+        item['idexp_lm3d'] = torch.from_numpy(raw_item['idexp_lm3d']).reshape(t_lm, -1).float()
+        eye_idexp_lm3d, mouth_idexp_lm3d = self.face3d_helper.get_eye_mouth_lm_from_lm3d(raw_item['idexp_lm3d'])
+        item['eye_idexp_lm3d'] = convert_to_tensor(eye_idexp_lm3d).reshape(t_lm, -1).float()
+        item['mouth_idexp_lm3d'] = convert_to_tensor(mouth_idexp_lm3d).reshape(t_lm, -1).float()
+        
+        # item = self.memory_cache[idx]
         item['ref_mean_lm3d'] = item['idexp_lm3d'].mean(dim=0).reshape([204,])
         return item
         
@@ -202,7 +245,7 @@ class LRS3SeqDataset(Dataset):
             print(f"load from cached stats.npy from {stats_fname}.")
             return
         if self.db_key != 'train':
-            raise ValueError("Please use train-dataset to generate the stats file!")
+            raise ValueError("Please use run `python tasks/audio2motion/dataset_utils/lrs3_dataset.py --config=egs/datasets/lrs3/lm3d_vae_sync.yaml` to generate the stats file!")
         print(f"stats.npy not found, generating...")
         exp_lst = []
         pose_lst = []
@@ -297,7 +340,7 @@ class LRS3SeqDataset(Dataset):
             return None
         batch = {}
         item_names = [s['item_id'] for s in samples]
-        style_batch = torch.stack([s["style"] for s in samples], dim=0) # [b, 135]
+        # style_batch = torch.stack([s["style"] for s in samples], dim=0) # [b, 135]
         x_len = max(s['mel'].size(0) for s in samples)
         x_len = x_len + (self.x_multiply - (x_len % self.x_multiply)) % self.x_multiply
         y_len = x_len // 2
@@ -315,7 +358,7 @@ class LRS3SeqDataset(Dataset):
 
         batch.update({
             'item_id': item_names,
-            'style': style_batch,
+            # 'style': style_batch,
             'mel': mel_batch,
             'hubert': hubert_batch,
             'x_mask': x_mask,
@@ -336,7 +379,7 @@ class LRS3SeqDataset(Dataset):
         shuffle = True if self.db_key == 'train' else False
         max_tokens = 60000
         batches_idx = self.batch_by_size(self.ordered_indices(), max_tokens=max_tokens)
-        loader = DataLoader(self, pin_memory=False,collate_fn=self.collater, batch_sampler=batches_idx, num_workers=4)
+        loader = DataLoader(self, pin_memory=False,collate_fn=self.collater, batch_sampler=batches_idx, num_workers=8
         return loader
 
 

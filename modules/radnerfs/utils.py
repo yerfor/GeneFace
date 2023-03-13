@@ -26,8 +26,6 @@ from torch.utils.data import Dataset, DataLoader
 
 import trimesh
 import mcubes
-from rich.console import Console
-# from torch_ema import ExponentialMovingAverage
 
 from utils.commons.hparams import hparams
 from packaging import version as pver
