@@ -14,7 +14,7 @@ save_gt: true
 num_ckpt_keep: 100
 val_check_interval: 2000
 valid_infer_interval: 2000
-max_updates: 10_0000
+max_updates: 4_0000
 seed: 9999
 lr: 0.0005
 scheduler: exponential # exponential|rsqrt|warmup|none|step_lr
@@ -47,3 +47,5 @@ hidden_size: 256
 infer_audio_source_name: ''
 infer_out_npy_name: ''
 infer_ckpt_steps: 40000
+
+load_db_to_memory: true

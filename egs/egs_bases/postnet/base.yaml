@@ -34,3 +34,5 @@ syncnet_ckpt_steps: 40000
 infer_audio_source_name: data/raw/val_wavs/zozo.wav
 infer_out_npy_name: infer_out/May/pred_lm3d/zozo.npy
 infer_ckpt_steps: 6000
+
+load_db_to_memory: true

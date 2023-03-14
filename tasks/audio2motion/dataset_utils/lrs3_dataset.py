@@ -10,7 +10,7 @@ from utils.commons.hparams import hparams
 from utils.commons.tensor_utils import convert_to_tensor
 from data_util.face3d_helper import Face3DHelper
 
-from tasks.audio2motion.dataset_utils.indexed_db import IndexedDataset
+from utils.commons.indexed_datasets import IndexedDataset
 from tasks.audio2motion.dataset_utils.euler2quaterion import euler2quaterion, quaterion2euler
 
 class LRS3SeqDataset(Dataset):
@@ -19,27 +19,13 @@ class LRS3SeqDataset(Dataset):
         self.ds_path = hparams['binary_data_dir']
         self.ds = None
         self.sizes = None
+        self.ordered_indices()
         self.memory_cache = {} # we use hash table to accelerate indexing
         self.face3d_helper = Face3DHelper('data_util/BFM_models')
         self.x_multiply = 8
-
-        self.get_stats()
-        self.exp_mean = torch.from_numpy(self.stats_dict['exp_mean']).reshape([1,1,64])
-        self.exp_std = torch.from_numpy(self.stats_dict['exp_std']).reshape([1,1,64])
-        self.pose_mean = torch.from_numpy(self.stats_dict['pose_mean']).reshape([1,1,7])
-        self.pose_std = torch.from_numpy(self.stats_dict['pose_std']).reshape([1,1,7])
-        self.exp_std_mean = torch.from_numpy(self.stats_dict['exp_std_mean'])
-        self.exp_std_std = torch.from_numpy(self.stats_dict['exp_std_std'])
-        self.exp_diff_std_mean = torch.from_numpy(self.stats_dict['exp_diff_std_mean'])
-        self.exp_diff_std_std = torch.from_numpy(self.stats_dict['exp_diff_std_std'])
-        self.pose_diff_std_mean = torch.from_numpy(self.stats_dict['pose_diff_std_mean'])
-        self.pose_diff_std_std = torch.from_numpy(self.stats_dict['pose_diff_std_std'])
-
-        self.idexp_lm3d_mean = torch.from_numpy(self.stats_dict['idexp_lm3d_mean']).reshape([1,68*3])
-        self.idexp_lm3d_std = torch.from_numpy(self.stats_dict['idexp_lm3d_std']).reshape([1,68*3])
-        self.mouth_idexp_lm3d_mean = torch.from_numpy(self.stats_dict['mouth_idexp_lm3d_mean']).reshape([1,20*3])
-        self.mouth_idexp_lm3d_std = torch.from_numpy(self.stats_dict['mouth_idexp_lm3d_std']).reshape([1,20*3])
-
+        if hparams['load_db_to_memory']:
+            self.load_db_to_memory()
+        
     @property
     def _sizes(self):
         return self.sizes
@@ -67,8 +53,9 @@ class LRS3SeqDataset(Dataset):
         if self.sizes is None:
             self.sizes = []
             print("Counting the size of each item in dataset...")
-            for i_sample in  tqdm.trange(len(self)):
-                sample = self.__getitem__(i_sample)
+            ds = IndexedDataset(f"{self.ds_path}/{self.db_key}")
+            for i_sample in tqdm.trange(len(ds)):
+                sample = ds[i_sample]
                 if sample is None:
                     size = 0
                 else:
@@ -156,7 +143,7 @@ class LRS3SeqDataset(Dataset):
 
     def load_db_to_memory(self):
         for idx in tqdm.trange(len(self), desc='Loading database to memory...'):
-            raw_item = self.ds[idx]
+            raw_item = self._get_item(idx)
             if raw_item is None:
                 continue
             item = {}
@@ -188,6 +175,7 @@ class LRS3SeqDataset(Dataset):
             eye_idexp_lm3d, mouth_idexp_lm3d = self.face3d_helper.get_eye_mouth_lm_from_lm3d(raw_item['idexp_lm3d'])
             item['eye_idexp_lm3d'] = convert_to_tensor(eye_idexp_lm3d).reshape(t_lm, -1).float()
             item['mouth_idexp_lm3d'] = convert_to_tensor(mouth_idexp_lm3d).reshape(t_lm, -1).float()
+            item['ref_mean_lm3d'] = item['idexp_lm3d'].mean(dim=0).reshape([204,])
             
             self.memory_cache[idx] = item
 
@@ -200,6 +188,9 @@ class LRS3SeqDataset(Dataset):
         return self.ds[index]
     
     def __getitem__(self, idx):
+        if hparams['load_db_to_memory']:
+            return self.memory_cache[idx]
+        
         raw_item = self._get_item(idx)
         if raw_item is None:
             print("loading from binary data failed!")
@@ -237,82 +228,6 @@ class LRS3SeqDataset(Dataset):
         # item = self.memory_cache[idx]
         item['ref_mean_lm3d'] = item['idexp_lm3d'].mean(dim=0).reshape([204,])
         return item
-        
-    def get_stats(self):
-        stats_fname = os.path.join(self.ds_path, "stats.npy")
-        if os.path.exists(stats_fname):
-            self.stats_dict = np.load(stats_fname,allow_pickle=True).tolist()
-            print(f"load from cached stats.npy from {stats_fname}.")
-            return
-        if self.db_key != 'train':
-            raise ValueError("Please use run `python tasks/audio2motion/dataset_utils/lrs3_dataset.py --config=egs/datasets/lrs3/lm3d_vae_sync.yaml` to generate the stats file!")
-        print(f"stats.npy not found, generating...")
-        exp_lst = []
-        pose_lst = []
-        idexp_lm3d_lst = []
-        mouth_idexp_lm3d_lst = []
-        for i in range(len(self)):
-            item = self.__getitem__(i)
-            exp_lst.append(item['exp'].numpy())
-            pose_lst.append(item['pose'].numpy())
-            idexp_lm3d_lst.append(item['idexp_lm3d'].numpy())
-            mouth_idexp_lm3d_lst.append(item['mouth_idexp_lm3d'].numpy())
-        exps = np.concatenate(exp_lst)
-        poses = np.concatenate(pose_lst)
-        exp_mean = exps.mean(axis=0)
-        exp_std = exps.std(axis=0)
-        pose_mean = poses.mean(axis=0)
-        pose_std = poses.std(axis=0)
-
-        idexp_lm3ds = np.concatenate(idexp_lm3d_lst)
-        mouth_idexp_lm3ds = np.concatenate(mouth_idexp_lm3d_lst)
-        idexp_lm3d_mean = idexp_lm3ds.mean(axis=0)
-        idexp_lm3d_std = idexp_lm3ds.std(axis=0)
-        mouth_idexp_lm3d_mean = mouth_idexp_lm3ds.mean(axis=0)
-        mouth_idexp_lm3d_std = mouth_idexp_lm3ds.std(axis=0)
-
-        exp_std_mean = np.stack([np.std(exp, axis=0) for exp in exp_lst],axis=0).mean(axis=0)
-        exp_std_std = np.stack([np.std(exp, axis=0) for exp in exp_lst],axis=0).std(axis=0)
-
-        diff_exp_lst = [exp[:-1,:]-exp[1:,:] for exp in exp_lst]
-        exp_diff_std_mean = np.stack([np.std(diff_exp, axis=0) for diff_exp in diff_exp_lst],axis=0).mean(axis=0)
-        exp_diff_std_std = np.stack([np.std(diff_exp, axis=0) for diff_exp in diff_exp_lst],axis=0).std(axis=0)
-
-        diff_pose_lst = [pose[:-1, :] - pose[1:, :] for pose in pose_lst]
-        pose_diff_std_mean = np.stack([np.std(diff_pose, axis=0) for diff_pose in diff_pose_lst],axis=0).mean(axis=0)
-        pose_diff_std_std = np.stack([np.std(diff_pose, axis=0) for diff_pose in diff_pose_lst],axis=0).std(axis=0)
-
-        stats_dict = {
-            "exp_mean": exp_mean,
-            "exp_std": exp_std,
-            "pose_mean": pose_mean,
-            "pose_std": pose_std,
-
-            # 3d lm related
-            "idexp_lm3d_mean": idexp_lm3d_mean,
-            "idexp_lm3d_std": idexp_lm3d_std,
-            "mouth_idexp_lm3d_mean": mouth_idexp_lm3d_mean,
-            "mouth_idexp_lm3d_std": mouth_idexp_lm3d_std,
-
-            # style encoding related
-            "exp_std_mean": exp_std_mean,
-            "exp_std_std": exp_std_std,
-            "exp_diff_std_mean": exp_diff_std_mean,
-            "exp_diff_std_std": exp_diff_std_std,
-            "pose_diff_std_mean": pose_diff_std_mean,
-            "pose_diff_std_std": pose_diff_std_std,
-        }
-        np.save(stats_fname, stats_dict)
-        self.stats_dict = stats_dict
-        print(f"stats.npy generated into {stats_fname}.")
-
-
-    def load_sty_to_memory(self):
-        for i in tqdm.trange(len(self), desc="calculating style_feat"):
-            item = self.memory_cache[i]
-            # calculate style encoding from style-avatar
-            sty = self._cal_avatar_style_encoding(item['exp'], item['pose'])
-            item['style'] = sty.float()
 
     @staticmethod
     def _collate_2d(values, max_len=None, pad_value=0):
@@ -379,7 +294,7 @@ class LRS3SeqDataset(Dataset):
         shuffle = True if self.db_key == 'train' else False
         max_tokens = 60000
         batches_idx = self.batch_by_size(self.ordered_indices(), max_tokens=max_tokens)
-        loader = DataLoader(self, pin_memory=False,collate_fn=self.collater, batch_sampler=batches_idx, num_workers=8)
+        loader = DataLoader(self, pin_memory=True,collate_fn=self.collater, batch_sampler=batches_idx, num_workers=8)
         return loader
 
 
@@ -387,7 +302,14 @@ if __name__ == '__main__':
     from utils.commons.hparams import set_hparams
     set_hparams()
     ds = LRS3SeqDataset('train')
+    ret = ds[0]
     loader = ds.get_dataloader()
+    pbar = tqdm.tqdm(total=len(ds.batch_by_size(ds.ordered_indices())))
+    # for i in tqdm.trange(len(ds)):
+    #     ds[i]
+    for batch in loader:
+        pbar.update(1)
+    
     pbar = tqdm.tqdm(total=len(ds.batch_by_size(ds.ordered_indices())))
     for batch in loader:
         pbar.update(1)

@@ -52,10 +52,18 @@ class IndexedDataset:
         if self.id2pos is not None and len(self.id2pos) > 0:
             i = self.id2pos[i]
         self.check_index(i)
+        
         chunk_id = bisect(self.meta['chunk_begin'][1:], self.byte_offsets[i])
-        data_file = self.data_files[chunk_id]
+        data_file = open(f"{self.path}.data", 'rb', buffering=-1)
         data_file.seek(self.byte_offsets[i] - self.meta['chunk_begin'][chunk_id])
         b = data_file.read(self.byte_offsets[i + 1] - self.byte_offsets[i])
+        data_file.close()
+        
+        # chunk_id = bisect(self.meta['chunk_begin'][1:], self.byte_offsets[i])
+        # data_file = self.data_files[chunk_id]
+        # data_file.seek(self.byte_offsets[i] - self.meta['chunk_begin'][chunk_id])
+        # b = data_file.read(self.byte_offsets[i + 1] - self.byte_offsets[i])
+
         unpickle = self.unpickle
         if unpickle:
             if self.gzip:
@@ -91,7 +99,7 @@ class IndexedDataset:
 
 class IndexedDatasetBuilder:
     def __init__(self, path, append=False, max_size=1024 * 1024 * 1024 * 64,
-                 default_idx_size=1024 * 1024 * 16, gzip=True):
+                 default_idx_size=1024 * 1024 * 16, gzip=False):
         self.path = self.root_path = path
         self.default_idx_size = default_idx_size
         if append:

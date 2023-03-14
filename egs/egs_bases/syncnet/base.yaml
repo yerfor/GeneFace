@@ -34,3 +34,4 @@ optimizer_adam_beta2: 0.999
 scheduler: none
 num_ckpt_keep: 100
 
+load_db_to_memory: true

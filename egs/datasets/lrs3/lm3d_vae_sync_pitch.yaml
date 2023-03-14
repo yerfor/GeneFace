@@ -2,4 +2,6 @@ base_config:
   - ./lm3d_vae_sync.yaml
 
 lambda_kl: 0.4
+syncnet_work_dir: checkpoints/lrs3/syncnet
+syncnet_ckpt_steps: 40000
 task_cls: tasks.audio2motion.lm3d_vae_sync_pitch.VAESyncAudio2MotionTask
