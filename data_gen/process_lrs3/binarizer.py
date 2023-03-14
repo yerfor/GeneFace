@@ -5,57 +5,9 @@ import torch
 from tqdm import trange
 import pickle
 from copy import deepcopy
+
 from data_util.face3d_helper import Face3DHelper
-
-class IndexedDataset:
-    def __init__(self, path, num_cache=10):
-        super().__init__()
-        self.path = path
-        self.data_file = None
-        self.data_offsets = np.load(f"{path}.idx", allow_pickle=True).item()['offsets']
-        self.data_file = open(f"{path}.data", 'rb', buffering=-1)
-        self.cache = []
-        self.num_cache = num_cache
-
-    def check_index(self, i):
-        if i < 0 or i >= len(self.data_offsets) - 1:
-            raise IndexError('index out of range')
-
-    def __del__(self):
-        if self.data_file:
-            self.data_file.close()
-
-    def __getitem__(self, i):
-        self.check_index(i)
-        if self.num_cache > 0:
-            for c in self.cache:
-                if c[0] == i:
-                    return c[1]
-        self.data_file.seek(self.data_offsets[i])
-        b = self.data_file.read(self.data_offsets[i + 1] - self.data_offsets[i])
-        item = pickle.loads(b)
-        if self.num_cache > 0:
-            self.cache = [(i, deepcopy(item))] + self.cache[:-1]
-        return item
-
-    def __len__(self):
-        return len(self.data_offsets) - 1
-
-
-class IndexedDatasetBuilder:
-    def __init__(self, path):
-        self.path = path
-        self.out_file = open(f"{path}.data", 'wb')
-        self.byte_offsets = [0]
-
-    def add_item(self, item):
-        s = pickle.dumps(item)
-        bytes = self.out_file.write(s)
-        self.byte_offsets.append(self.byte_offsets[-1] + bytes)
-
-    def finalize(self):
-        self.out_file.close()
-        np.save(open(f"{self.path}.idx", 'wb'), {'offsets': self.byte_offsets})
+from utils.commons.indexed_datasets import IndexedDataset, IndexedDatasetBuilder
 
 
 def load_video_npy(fn):
@@ -90,10 +42,10 @@ if __name__ == '__main__':
     
     import glob,tqdm
     prefixs = ['val', 'train']
-    binarized_ds_path = "/home/yezhenhui/datasets/binary/lrs3_tmp"
+    binarized_ds_path = "/home/yezhenhui/datasets/binary/lrs3_pt"
     os.makedirs(binarized_ds_path, exist_ok=True)
     for prefix in prefixs:
-        databuilder = IndexedDatasetBuilder(os.path.join(binarized_ds_path, prefix))
+        databuilder = IndexedDatasetBuilder(os.path.join(binarized_ds_path, prefix), gzip=False)
         raw_base_dir =  '/home/yezhenhui/datasets/raw/lrs3_raw'
         spk_ids = sorted([dir_name.split("/")[-1] for dir_name in glob.glob(raw_base_dir + "/*")])
         spk_id2spk_idx = {spk_id : i for i,spk_id in enumerate(spk_ids) }
@@ -112,7 +64,7 @@ if __name__ == '__main__':
             clip_id = lst[-1][:-4]
             audio_npy_name = os.path.join(raw_base_dir, spk_id, clip_id+"_audio.npy")
             hubert_npy_name = os.path.join(raw_base_dir, spk_id, clip_id+"_hubert.npy")
-            video_npy_name = os.path.join(raw_base_dir, spk_id, clip_id+".npy")
+            video_npy_name = os.path.join(raw_base_dir, spk_id, clip_id+"_coeff_pt.npy")
             if (not os.path.exists(audio_npy_name)) or (not os.path.exists(video_npy_name)):
                 print(f"Skip item for not found.")
                 continue

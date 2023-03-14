@@ -33,7 +33,7 @@ class Reconstructor(nn.Module):
     
     def preprocess_data(self, im, lm, lm3d_std):
         # to RGB 
-        W,H,_ = im.shape
+        H,W,_ = im.shape
         lm = lm.reshape([-1, 2])
         lm[:, -1] = H - 1 - lm[:, -1]
 
