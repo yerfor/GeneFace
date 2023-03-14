@@ -76,4 +76,4 @@ infer_lm3d_lle_percent: 0. # percent of lle fused feature to compose the process
 infer_lm3d_smooth_sigma: 0. # sigma of gaussian kernel to smooth the predicted lm3d
 infer_pose_smooth_sigma: 2.
 
-load_imgs_to_memory: false # load uint8 training img to memory, which reduce io costs.
+load_imgs_to_memory: true # load uint8 training img to memory, which reduce io costs, at the expense of more memory occupation

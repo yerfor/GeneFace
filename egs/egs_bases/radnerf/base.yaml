@@ -47,6 +47,7 @@ cond_type: '' # deepspeech, esperanto, idexp_lm3d
 
 # training
 amp: true # use fp16
+load_imgs_to_memory: true # load uint8 training img to memory, which reduce io costs, at the expense of more memory occupation
 
 # NeRF-related 
 near: 0.3
@@ -78,9 +79,7 @@ dt_gamma: 0.00390625 # default 1/256, dt_gamma (>=0) for adaptive ray marching. 
 density_thresh: 10 # threshold for density grid to be occupied (sigma)
 density_thresh_torso: 0.01 # threshold for density grid to be occupied (alpha)
 torso_shrink: 0.8 # shrink bg coords to allow more flexibility in deform
-
-
-
+ 
 smooth_lips: false
 
 # Network

@@ -127,10 +127,19 @@ class RADNeRFDataset(torch.utils.data.Dataset):
     def __getitem__(self, idx):
         raw_sample = self.samples[idx]
         
-        if 'torso_img' not in self.samples[idx].keys():
-            self.samples[idx]['torso_img'] = load_image_as_uint8_tensor(self.samples[idx]['torso_img_fname'])
-        if 'gt_img' not in self.samples[idx].keys():
-            self.samples[idx]['gt_img'] = load_image_as_uint8_tensor(self.samples[idx]['gt_img_fname'])
+        if hparams.get("load_imgs_to_memory", True):
+            # disable it to save memory usage.
+            # for 5500 images, it takes 1 minutes to imread, by contrast, only 1s is needed to index them in memory. 
+            # But it reuqires 15GB memory for caching 5500 images at 512x512 resolution.
+            if 'torso_img' not in self.samples[idx].keys():
+                self.samples[idx]['torso_img'] = load_image_as_uint8_tensor(self.samples[idx]['torso_img_fname'])
+                self.samples[idx]['gt_img'] = load_image_as_uint8_tensor(self.samples[idx]['gt_img_fname'])
+            torso_img = self.samples[idx]['torso_img']
+            gt_img = self.samples[idx]['gt_img']
+        else:
+            torso_img = load_image_as_uint8_tensor(self.samples[idx]['torso_img_fname'])
+            gt_img = load_image_as_uint8_tensor(self.samples[idx]['gt_img_fname'])
+
 
         sample = {
             'H': self.H,
@@ -146,22 +155,6 @@ class RADNeRFDataset(torch.utils.data.Dataset):
             'bg_img': self.bg_img,
         }
 
-        # if self.cond_type == 'deepspeech':
-        #     sample.update({
-        #         'cond_win': raw_sample['deepspeech_win'].unsqueeze(0), # [B=1, T=16, C=29]
-        #         'cond_wins': raw_sample['deepspeech_wins'], # [Win=8, T=16, C=29]
-        #     })
-        # elif self.cond_type == 'esperanto':
-        #     sample.update({
-        #         'cond_win': raw_sample['esperanto_win'].unsqueeze(0), # [B=1, T=16, C=29]
-        #         'cond_wins': raw_sample['esperanto_wins'], # [Win=8, T=16, C=29]
-        #     })
-        # elif self.cond_type == 'idexp_lm3d_normalized':
-        #     sample['cond'] = raw_sample['idexp_lm3d_normalized'].reshape([1,-1]) # [1, 204]
-        #     sample['cond_win'] = raw_sample['idexp_lm3d_normalized_win'].reshape([1, hparams['cond_win_size'],-1]) # [1, T_win, 204]
-        #     sample['cond_wins'] = raw_sample['idexp_lm3d_normalized_wins'].reshape([hparams['smo_win_size'], hparams['cond_win_size'],-1]) # [smo_win, T_win, 204]
-        # else:
-        #     raise NotImplementedError
         sample['cond_wins'] = get_audio_features(self.conds, att_mode=2, index=idx)
 
         ngp_pose = self.poses[idx].unsqueeze(0)
@@ -169,8 +162,8 @@ class RADNeRFDataset(torch.utils.data.Dataset):
         sample['pose_matrix'] = ngp_pose # [B, 4, 4]
 
         sample.update({
-            'torso_img': raw_sample['torso_img'].float() / 255.,
-            'gt_img': raw_sample['gt_img'].float() / 255.,
+            'torso_img': torso_img.float() / 255.,
+            'gt_img': gt_img.float() / 255.,
         })
         
         if self.training:

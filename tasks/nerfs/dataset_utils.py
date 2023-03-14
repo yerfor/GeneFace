@@ -38,14 +38,18 @@ class NeRFDataset(torch.utils.data.Dataset):
     def __getitem__(self, idx):
         raw_sample = self.samples[idx]
 
-        if hparams.get("load_imgs_to_memory", False):
+        if hparams.get("load_imgs_to_memory", True):
+            # disable it to save memory usage.
+            # for 5500 images, it takes 1 minutes to imread, by contrast, only 1s is needed to index them in memory. 
+            # But it reuqires 15GB memory for caching 5500 images at 512x512 resolution.
             if 'head_img' not in self.samples[idx].keys():
                 self.samples[idx]['head_img'] = load_image_as_uint8_tensor(self.samples[idx]['head_img_fname'])
-            if 'gt_img' not in self.samples[idx].keys():
                 self.samples[idx]['gt_img'] = load_image_as_uint8_tensor(self.samples[idx]['gt_img_fname'])
+            head_img = self.samples[idx]['head_img']
+            gt_img = self.samples[idx]['gt_img']
         else:
-            raw_sample['head_img'] = load_image_as_uint8_tensor(self.samples[idx]['head_img_fname'])
-            raw_sample['gt_img'] = load_image_as_uint8_tensor(self.samples[idx]['gt_img_fname'])
+            head_img = load_image_as_uint8_tensor(self.samples[idx]['head_img_fname'])
+            gt_img = load_image_as_uint8_tensor(self.samples[idx]['gt_img_fname'])
 
         sample = {
             'H': self.H,
@@ -69,8 +73,8 @@ class NeRFDataset(torch.utils.data.Dataset):
         }
 
         sample.update({
-            'head_img': raw_sample['head_img'].float() / 255.,
-            'gt_img': raw_sample['gt_img'].float() / 255.,
+            'head_img': head_img.float() / 255.,
+            'gt_img': gt_img.float() / 255.,
         })
                
         if self.cond_type == 'deepspeech':
