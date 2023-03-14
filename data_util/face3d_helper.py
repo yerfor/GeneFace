@@ -5,7 +5,7 @@ from scipy.io import loadmat
 
 
 class Face3DHelper:
-    def __init__(self, bfm_dir='data_util/BFM_models', use_gpu=True):
+    def __init__(self, bfm_dir='deep_3drecon_pytorch/BFM', use_gpu=True):
         self.bfm_dir = bfm_dir
         self.device = 'cuda' if use_gpu else 'cpu'
         self.load_3dmm()
@@ -41,7 +41,7 @@ class Face3DHelper:
         }
         return ret_dict
     
-    def reconstruct_face3d(self, id_coeff, exp_coeff):
+    def reconstruct_face_mesh(self, id_coeff, exp_coeff):
         """
         Generate a pose-independent 3D face mesh!
         id_coeff: Tensor[T, c=80]
@@ -58,8 +58,8 @@ class Face3DHelper:
         face = face.reshape([face.shape[0], -1, 3]) # [t,N,3]
         # re-centering the face with mean_xyz, so the face will be in [-1, 1]
         mean_xyz = self.mean_shape.squeeze().reshape([-1,3]).mean(dim=0) # [1, 3]
-        face3d = face - mean_xyz.unsqueeze(0) # [t,N,3]
-        return face3d
+        face_mesh = face - mean_xyz.unsqueeze(0) # [t,N,3]
+        return face_mesh
 
     def reconstruct_lm3d(self, id_coeff, exp_coeff):
         """
@@ -97,39 +97,7 @@ class Face3DHelper:
         face = face.reshape([face.shape[0], -1, 3]) # [t,N,3]
         lm3d = face * 10
         return lm3d
-
-    def reconstruct_exp_lm3d(self, exp_coeff):
-        """
-        Generate Exp 3D landmark with keypoint base!
-        exp_coeff: Tensor[T, c=64]
-        """
-        exp_coeff = exp_coeff.to(self.device)
-        # mean_face = self.key_mean_shape.squeeze().reshape([1, -1]) # [3*68, 1] ==> [1, 3*68]
-        exp_base = self.key_exp_base # [3*68, C]
-        expression_diff_face = torch.matmul(exp_coeff, exp_base.transpose(0,1)) # [t,c],[c,3*68] ==> [t,3*68]
-        
-        # face = mean_face + expression_diff_face # [t,3N]
-        face = expression_diff_face # [t,3N]
-        face = face.reshape([face.shape[0], -1, 3]) # [t,N,3]
-        lm3d = face * 10
-        return lm3d
-
-    def get_lm3d_from_face3d(self, face3d):
-        """
-        get the 3D coordinates of 68 keypoints in the face3D by simply indexing.
-        face3d: [t, N, 3]
-        """
-        lm3d = face3d[:, self.key_points, :] # [t, 68, 3]
-        return lm3d
     
-    def get_lm3d_from_coeff_seq(self, coeff_arr):
-        """
-        coeff_arr: [T, 257]
-        """
-        ret_dict = self.split_coeff(coeff_arr)
-        lm3d = self.reconstruct_lm3d(ret_dict['identity'], ret_dict['expression'])
-        return lm3d
-
     def get_eye_mouth_lm_from_lm3d(self, lm3d):
         eye_lm = lm3d[:, 17:48] # [T, 31, 3]
         mouth_lm = lm3d[:, 48:68] # [T, 20, 3]
@@ -150,17 +118,53 @@ class Face3DHelper:
         identity = identity[None, :].repeat([T, 1])
         lm3d = self.reconstruct_lm3d(identity, exp_arr)
         return lm3d
+    
+    def get_lm3d_from_coeff_seq(self, coeff_arr):
+        """
+        coeff_arr: [T, 257]
+        """
+        ret_dict = self.split_coeff(coeff_arr)
+        lm3d = self.reconstruct_lm3d(ret_dict['identity'], ret_dict['expression'])
+        return lm3d
+    def close_mouth_for_idexp_lm3d(self, idexp_lm3d, freeze_as_first_frame=True):
+        idexp_lm3d = idexp_lm3d.reshape([-1, 68,3])
+        num_frames = idexp_lm3d.shape[0]
+        eps = 0.0
+        # [n_landmarks=68,xyz=3], x 代表左右，y代表上下，z代表深度
+        idexp_lm3d[:,49:54, 1] = (idexp_lm3d[:,49:54, 1] + idexp_lm3d[:,range(59,54,-1), 1])/2 + eps * 2
+        idexp_lm3d[:,range(59,54,-1), 1] = (idexp_lm3d[:,49:54, 1] + idexp_lm3d[:,range(59,54,-1), 1])/2 - eps * 2
+
+        idexp_lm3d[:,61:64, 1] = (idexp_lm3d[:,61:64, 1] + idexp_lm3d[:,range(67,64,-1), 1])/2 + eps
+        idexp_lm3d[:,range(67,64,-1), 1] = (idexp_lm3d[:,61:64, 1] + idexp_lm3d[:,range(67,64,-1), 1])/2 - eps
+
+        idexp_lm3d[:,49:54, 1] += (0.03 - idexp_lm3d[:,49:54, 1].mean(dim=1) + idexp_lm3d[:,61:64, 1].mean(dim=1)).unsqueeze(1).repeat([1,5])
+        idexp_lm3d[:,range(59,54,-1), 1] += (-0.03 - idexp_lm3d[:,range(59,54,-1), 1].mean(dim=1) + idexp_lm3d[:,range(67,64,-1), 1].mean(dim=1)).unsqueeze(1).repeat([1,5])
+
+        if freeze_as_first_frame:
+            idexp_lm3d[:, 48:68,] = idexp_lm3d[0, 48:68].unsqueeze(0).clone().repeat([num_frames, 1,1])*0
+        return idexp_lm3d.cpu()
+
+    def close_eyes_for_idexp_lm3d(self, idexp_lm3d):
+        idexp_lm3d = idexp_lm3d.reshape([-1, 68,3])
+        eps = 0.003
+        idexp_lm3d[:,37:39, 1] = (idexp_lm3d[:,37:39, 1] + idexp_lm3d[:,range(41,39,-1), 1])/2 + eps
+        idexp_lm3d[:,range(41,39,-1), 1] = (idexp_lm3d[:,37:39, 1] + idexp_lm3d[:,range(41,39,-1), 1])/2 - eps
+
+        idexp_lm3d[:,43:45, 1] = (idexp_lm3d[:,43:45, 1] + idexp_lm3d[:,range(47,45,-1), 1])/2 + eps
+        idexp_lm3d[:,range(47,45,-1), 1] = (idexp_lm3d[:,43:45, 1] + idexp_lm3d[:,range(47,45,-1), 1])/2 - eps
+        
+        return idexp_lm3d
 
 if __name__ == '__main__':
     import cv2
     
     font = cv2.FONT_HERSHEY_SIMPLEX
 
-    face3d_helper = Face3DHelper('data_util/BFM_models')
+    face_mesh_helper = Face3DHelper('data_util/BFM_models')
     coeff_npy = 'data/processed/videos/May/coeff.npy'
     coeff_dict = np.load(coeff_npy, allow_pickle=True).tolist()
     coeff = torch.from_numpy(coeff_dict['coeff']) # [-250:]
-    lm3d = face3d_helper.reconstruct_idexp_lm3d(coeff[:, :80], coeff[:, 80:144])
+    lm3d = face_mesh_helper.reconstruct_idexp_lm3d(coeff[:, :80], coeff[:, 80:144])
 
     lm3d_mean = lm3d.mean(dim=0, keepdims=True)
     lm3d_std = lm3d.std(dim=0, keepdims=True)
@@ -183,4 +187,4 @@ if __name__ == '__main__':
             img = cv2.circle(img, center=(x,y), radius=3, color=color, thickness=-1)
             img = cv2.putText(img, f"{i}", org=(x,y), fontFace=font, fontScale=0.3, color=(255,0,0))
         img = cv2.flip(img, 0)
-        cv2.imwrite(f'infer_outs/tmp_imgs/{format(i_img, "05d")}.png', img)
+        cv2.imwrite(f'infer_out/tmp_imgs/{format(i_img, "05d")}.png', img)

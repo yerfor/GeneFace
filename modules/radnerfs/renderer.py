@@ -71,7 +71,6 @@ class NeRFRenderer(nn.Module):
         self.min_near = hparams['min_near']
         self.density_thresh = hparams['density_thresh']
 
-        self.smooth_lips = hparams['smooth_lips']
         self.cuda_ray = hparams['cuda_ray']
 
         # prepare aabb with a 6D tensor (xmin, ymin, zmin, xmax, ymax, zmax)
@@ -101,10 +100,6 @@ class NeRFRenderer(nn.Module):
         self.mean_count = 0
         self.local_step = 0
         
-        # decay for enc_a
-        if self.smooth_lips:
-            self.cond_feat = None
-
     def cal_cond_feat(self, cond):
         raise NotImplementedError()
     
