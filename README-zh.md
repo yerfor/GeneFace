@@ -14,31 +14,31 @@
 
 
 ## 🔥新闻:
-- `2023.3.20` 我们在这个release做出了重大的更新，包括：1) 基于RAD-NeRF的渲染器，它可以做到实时渲染，并且训练时间缩短到10小时。  2) 基于pytorch的`deep3d_recon`模块,相比起之前使用的Tensorflow版本，它更容易安装，并且推理速度快8倍。 3) 音高感知的`audio2motion`模块，相比原先的版本可以生成更加准确的唇形。4) 解决了一些导致过多内存占用的bug。5)我们会在四月上传最新的论文。
+- `2023.3.20` 我们在[这个release](https://github.com/yerfor/GeneFace/releases/tag/v1.1.0)做出了重大的更新，包括：1) 基于RAD-NeRF的渲染器，它可以做到实时渲染，并且训练时间缩短到10小时。  2) 基于pytorch的`deep3d_recon`模块,相比起之前使用的Tensorflow版本，它更容易安装，并且推理速度快8倍。 3) 音高感知的`audio2motion`模块，相比原先的版本可以生成更加准确的唇形。4) 解决了一些导致过多内存占用的bug。5)我们会在四月上传最新的论文。
 - `2023.2.22` 我们发布了一段一分钟的[Demo视频](https://geneface.github.io/GeneFace/how_i_want_to_say_goodbye.mp4)，在其中GeneFace由[DiffSinger](https://github.com/MoonInTheRiver/DiffSinger)生成的一段中文歌曲所驱动，并能够产生准确的嘴形。
-- `2023.2.20` 我们发布了一个稳定版本的3D landmark后处理逻辑，位于 `inference/ners/lm3d_nerf_infer.py`，它大大提升了最终合成的视频的稳定性和质量。
+- `2023.2.20` 我们发布了一个稳定版本的3D landmark后处理逻辑，位于 `inference/nerfs/lm3d_nerf_infer.py`，它大大提升了最终合成的视频的稳定性和质量。
 
 ## Quick Started!
 
-在[这个release](https://github.com/yerfor/GeneFace/releases/tag/v1.0.0)中，我们提供了预训练的GeneFace模型和处理好的数据集，以便您能快速上手。在本小节的剩余部分我们将介绍如何分4个步骤运行这些模型。如果您想在您自己的目标人物视频上训练GeneFace，请遵循 `docs/prepare_env`、`docs/process_data` 、`docs/train_models` 中的步骤。
+在[这个release](https://github.com/yerfor/GeneFace/releases/tag/v1.1.0)中，我们提供了预训练的GeneFace模型和处理好的数据集，以便您能快速上手。在本小节的剩余部分我们将介绍如何分4个步骤运行这些模型。如果您想在您自己的目标人物视频上训练GeneFace，请遵循 `docs/prepare_env`、`docs/process_data` 、`docs/train_models` 中的步骤。
 
-步骤1：根据我们在`docs/prepare_env/install_guide_nerf.md`中的步骤，新建一个名为`geneface`的Python环境。通过[这个链接](https://drive.google.com/drive/folders/1YCxXKJFfo1w01PzayhnxWSZZK5k7spSH?usp=share_link)下载`BFM_model_front.mat`，将其复制到`./deep_3drecon/BFM` 和 `./deep_3drecon/BFM` 目录下。
+步骤1：根据我们在`docs/prepare_env/install_guide.md`中的步骤，新建一个名为`geneface`的Python环境。
 
 步骤2：下载`lrs3.zip`和`May.zip`文件，并将其解压在`checkpoints`文件夹中。
 
-步骤3：下载我们处理好的`May.mp4`的数据集文件`trainval_dataset.npy`（大约3.5GB），[链接](https://drive.google.com/drive/folders/1QmXCLjVw4D1wMnrXIuH3ATnCYivSNxoB?usp=share_link)，并将其移动到`data/binary/videos/May/trainval_dataset.npy`路径中。
+步骤3：下载我们处理好的`May.mp4`的数据集文件`trainval_dataset.npy`（大约500 MB），[链接](https://drive.google.com/file/d/1bqLSESYzfXPHlFt0j-oXAnM88ZeUG-Y9/view?usp=share_link)，并将其移动到`data/binary/videos/May/trainval_dataset.npy`路径中。
 
 做完上面的步骤后，您的 `checkpoints`和`data` 文件夹的结构应该是这样的：
 
 ```
 > checkpoints
     > lrs3
-        > lm3d_vae
+        > lm3d_vae_sync
         > syncnet
     > May
         > postnet
-        > lm3d_nerf
-        > lm3d_nerf_torso
+        > lm3d_radnerf
+        > lm3d_radnerf_torso
 > data
     > binary
         > videos
@@ -50,7 +50,7 @@ Step4. 在终端中执行以下命令：
 
 ```
 bash scripts/infer_postnet.sh
-bash scripts/infer_lm3d_nerf.sh
+bash scripts/infer_lm3d_radnerf.sh
 ```
 
 你能在以下路径找到输出的视频 `infer_out/May/pred_video/zozo.mp4`.
@@ -94,5 +94,6 @@ bash scripts/infer_lm3d_nerf.sh
 本工作受到以下仓库的影响：
 
 * [NATSpeech](https://github.com/NATSpeech/NATSpeech) (参考了其中的代码框架)
-* [AD-NeRF](https://github.com/YudongGuo/AD-NeRF) (参考了NeRF相关的代码实现)
-* [style_avatar](https://github.com/wuhaozhe/style_avatar) (参考了3DMM相关的代码实现)
+* [AD-NeRF](https://github.com/YudongGuo/AD-NeRF) (参考了NeRF相关的数据提取和原始NeRF的代码实现)
+* [RAD-NeRF](https://github.com/ashawkey/RAD-NeRF) (参考了RAD-NeRF的代码实现)
+* [Deep3DFaceRecon_pytorch](https://github.com/sicxu/Deep3DFaceRecon_pytorch) (参考了基于Pytorch的3DMM参数提取)

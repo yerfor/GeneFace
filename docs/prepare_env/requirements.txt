@@ -3,7 +3,7 @@ transformers
 scipy
 scikit-learn
 scikit-image
-tensorflow-gpu
+tensorflow==2.11.0 # you can flexible it, this is gpu version
 tensorboard
 tensorboardX
 python_speech_features
@@ -23,3 +23,4 @@ ffmpeg-python
 moviepy
 dearpygui
 ninja
+pyaudio # for extract esperanto
