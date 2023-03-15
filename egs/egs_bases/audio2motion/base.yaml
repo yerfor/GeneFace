@@ -48,4 +48,4 @@ infer_audio_source_name: ''
 infer_out_npy_name: ''
 infer_ckpt_steps: 40000
 
-load_db_to_memory: true
+load_db_to_memory: false # enable it for faster indexing

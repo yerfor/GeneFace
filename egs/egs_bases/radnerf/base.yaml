@@ -121,3 +121,5 @@ gui_h: 512
 gui_radius: 3.35
 gui_fovy: 21.24
 gui_max_spp: 1 # GUI rendering max sample per pixel
+
+load_imgs_to_memory: false # load uint8 training img to memory, which reduce io costs, at the expense of more memory occupation
