@@ -5,8 +5,8 @@ import pickle as pkl
 opt = TestOptions().parse()  # get test options
 opt.name='facerecon'
 opt.epoch=20
-opt.bfm_folder='deep_3drecon_pytorch/BFM/'
-opt.checkpoints_dir='deep_3drecon_pytorch/checkpoints/'
+opt.bfm_folder='deep_3drecon/BFM/'
+opt.checkpoints_dir='deep_3drecon/checkpoints/'
 
-with open("deep_3drecon_pytorch/reconstructor_opt.pkl", 'wb') as f:
+with open("deep_3drecon/reconstructor_opt.pkl", 'wb') as f:
     pkl.dump(opt, f)

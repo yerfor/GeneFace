@@ -5,7 +5,7 @@ from scipy.io import loadmat
 
 
 class Face3DHelper:
-    def __init__(self, bfm_dir='deep_3drecon_pytorch/BFM', use_gpu=True):
+    def __init__(self, bfm_dir='deep_3drecon/BFM', use_gpu=True):
         self.bfm_dir = bfm_dir
         self.device = 'cuda' if use_gpu else 'cpu'
         self.load_3dmm()

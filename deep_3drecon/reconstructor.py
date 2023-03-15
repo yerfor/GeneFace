@@ -3,7 +3,7 @@ Pytorch Deep3D_Recon is 8x faster than TF-based, 16s/iter ==> 2s/iter
 """
 
 import os
-# os.environ['PYTHONPATH'] = os.environ['PYTHONPATH'] + ":" + os.path.abspath("deep_3drecon_pytorch")
+# os.environ['PYTHONPATH'] = os.environ['PYTHONPATH'] + ":" + os.path.abspath("deep_3drecon")
 import torch
 import torch.nn as nn
 from .deep_3drecon_models.facerecon_model import FaceReconModel
@@ -17,7 +17,7 @@ from PIL import Image
 
 from utils.commons.tensor_utils import convert_to_tensor, convert_to_np
 
-with open("deep_3drecon_pytorch/reconstructor_opt.pkl", "rb") as f:
+with open("deep_3drecon/reconstructor_opt.pkl", "rb") as f:
     opt = pkl.load(f) 
     
 class Reconstructor(nn.Module):
