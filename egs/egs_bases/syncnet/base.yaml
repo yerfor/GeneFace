@@ -26,7 +26,7 @@ clip_grad_norm: 1.
 
 # training-scheme-related
 task_cls: tasks.syncnet.lm3d_syncnet.SyncNetTask
-max_updates: 5_0000
+max_updates: 4_0000
 seed: 9999
 lr: 0.0005
 optimizer_adam_beta1: 0.9

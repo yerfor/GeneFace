@@ -160,7 +160,7 @@ if __name__ == '__main__':
     
     font = cv2.FONT_HERSHEY_SIMPLEX
 
-    face_mesh_helper = Face3DHelper('data_util/BFM_models')
+    face_mesh_helper = Face3DHelper('deep_3drecon/BFM')
     coeff_npy = 'data/processed/videos/May/coeff.npy'
     coeff_dict = np.load(coeff_npy, allow_pickle=True).tolist()
     coeff = torch.from_numpy(coeff_dict['coeff']) # [-250:]

@@ -5,7 +5,7 @@ import numpy as np
 import torch
 import torch.nn.functional as F
 from scipy.io import loadmat
-from deep_3drecon_pytorch.util.load_mats import transferBFM09
+from deep_3drecon.util.load_mats import transferBFM09
 import os
 
 def perspective_projection(focal, center):

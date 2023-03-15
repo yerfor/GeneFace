@@ -7,14 +7,14 @@ import argparse
 from tqdm import tqdm, trange
 import torch
 import face_alignment
-import deep_3drecon_pytorch
+import deep_3drecon
 from moviepy.editor import VideoFileClip
 import copy
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 fa = face_alignment.FaceAlignment(face_alignment.LandmarksType._2D, network_size=4, device='cuda')
-face_reconstructor = deep_3drecon_pytorch.Reconstructor()
+face_reconstructor = deep_3drecon.Reconstructor()
 
 # landmark detection in Deep3DRecon
 def lm68_2_lm5(in_lm):

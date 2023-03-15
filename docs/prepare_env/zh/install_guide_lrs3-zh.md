@@ -22,7 +22,7 @@
 
 获得其中的 ` BFM_model_front.mat` 存到 `./deep_3drecon/BFM` 路径
 
-获得其中的 ` BFM_model_front.mat` 存到 `./data_util/BFM_models` 路径
+获得其中的 ` BFM_model_front.mat` 存到 `./deep_3drecon/BFM` 路径
 
 
 ## 1.4 FaceRecon Model

@@ -1,18 +1,13 @@
 # big files
 data_util/face_tracking/3DMM/01_MorphableModel.mat
 data_util/face_tracking/3DMM/3DMM_info.npy
-data_util/BFM_models/BFM_model_front.mat
-!/data_util/BFM_models/.gitkeep
+
+!/deep_3drecon/BFM/.gitkeep
 deep_3drecon/BFM/Exp_Pca.bin
 deep_3drecon/BFM/01_MorphableModel.mat
 deep_3drecon/BFM/BFM_model_front.mat
 deep_3drecon/network/FaceReconModel.pb
-
-deep_3drecon_pytorch/BFM/Exp_Pca.bin
-deep_3drecon_pytorch/BFM/01_MorphableModel.mat
-deep_3drecon_pytorch/BFM/BFM_model_front.mat
-deep_3drecon_pytorch/network/FaceReconModel.pb
-deep_3drecon_pytorch/checkpoints/*
+deep_3drecon/checkpoints/*
 
 .vscode
 ### Project ignore

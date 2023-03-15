@@ -21,7 +21,7 @@ class LRS3SeqDataset(Dataset):
         self.sizes = None
         self.ordered_indices()
         self.memory_cache = {} # we use hash table to accelerate indexing
-        self.face3d_helper = Face3DHelper('data_util/BFM_models')
+        self.face3d_helper = Face3DHelper('deep_3drecon/BFM')
         self.x_multiply = 8
         if hparams['load_db_to_memory']:
             self.load_db_to_memory()

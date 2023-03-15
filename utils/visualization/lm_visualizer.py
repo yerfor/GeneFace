@@ -4,7 +4,7 @@ from data_util.face3d_helper import Face3DHelper
 from utils.visualization.ffmpeg_utils import imgs_to_video
 import os
 
-face3d_helper = Face3DHelper('data_util/BFM_models')
+face3d_helper = Face3DHelper('deep_3drecon/BFM')
 lrs3_stats = np.load('data/binary/lrs3/stats.npy',allow_pickle=True).tolist()
 lrs3_idexp_mean = lrs3_stats['idexp_lm3d_mean'].reshape([1,204])
 lrs3_idexp_std = lrs3_stats['idexp_lm3d_std'].reshape([1,204])
