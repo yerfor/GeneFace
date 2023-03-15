@@ -51,6 +51,7 @@ Step4. 在终端中执行以下命令：
 ```
 bash scripts/infer_postnet.sh
 bash scripts/infer_lm3d_radnerf.sh
+# bash scripts/infer_radnerf_gui.sh # 你也可以利用RADNeRF提供的GUI进行交互体验
 ```
 
 你能在以下路径找到输出的视频 `infer_out/May/pred_video/zozo.mp4`.

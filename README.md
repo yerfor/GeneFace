@@ -55,6 +55,7 @@ After the above steps, the structure of your `checkpoints` and `data` directory 
 ```
 bash scripts/infer_postnet.sh
 bash scripts/infer_lm3d_radnerf.sh
+# bash scripts/infer_radnerf_gui.sh # you can also use GUI provided by RADNeRF
 ```
 
 You can find a output video named `infer_out/May/pred_video/zozo.mp4`.

@@ -296,7 +296,7 @@ class LRS3SeqDataset(Dataset):
         batches_idx = self.batch_by_size(self.ordered_indices(), max_tokens=max_tokens)
         batches_idx = batches_idx * 50
         random.shuffle(batches_idx)
-        loader = DataLoader(self, pin_memory=True,collate_fn=self.collater, batch_sampler=batches_idx, num_workers=8)
+        loader = DataLoader(self, pin_memory=True,collate_fn=self.collater, batch_sampler=batches_idx, num_workers=4)
         return loader
 
 
