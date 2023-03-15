@@ -40,8 +40,7 @@ class LM3d_RADNeRFInfer(LM3dNeRFInfer):
 
         # load the lm3d as the condition for lm3d head nerf
         assert inp['cond_name'].endswith('.npy')
-        # lm3d_arr = np.load(inp['cond_name'])[0] # [T, w=16, c=29]
-        lm3d_arr = np.load(inp['cond_name'])[:250] # [T, w=16, c=29]
+        lm3d_arr = np.load(inp['cond_name'])[0] # [T, w=16, c=29]
         idexp_lm3d = torch.from_numpy(lm3d_arr).float()
         print(f"Loaded pre-extracted 3D landmark sequence from {inp['cond_name']}!")
         # idexp_lm3d = self.face3d_helper.close_eyes_for_idexp_lm3d(idexp_lm3d)
