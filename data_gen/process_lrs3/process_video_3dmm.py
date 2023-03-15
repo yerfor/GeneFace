@@ -110,12 +110,13 @@ if __name__ == '__main__':
     ### Process short video clips for LRS3 dataset
     from argparse import ArgumentParser
     parser = ArgumentParser()
+    parser.add_argument('--lrs3_path', type=int, default='/home/yezhenhui/datasets/raw/lrs3_raw', help='')
     parser.add_argument('--process_id', type=int, default=0, help='')
     parser.add_argument('--total_process', type=int, default=1, help='')
     args = parser.parse_args()
 
     import os, glob
-    lrs3_dir = "/home/yezhenhui/datasets/raw/lrs3_raw"
+    lrs3_dir = parser.lrs3_path
     mp4_name_pattern = os.path.join(lrs3_dir, "*/*.mp4")
     mp4_names = glob.glob(mp4_name_pattern)
     mp4_names = sorted(mp4_names)

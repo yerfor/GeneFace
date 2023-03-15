@@ -65,5 +65,5 @@ def main(rank, opt, name='examples'):
 
 if __name__ == '__main__':
     opt = TestOptions().parse()  # get test options
-    main(0, opt,opt.img_folder)
-    
+    main(0, opt, 'deep_3drecon/datasets/examples')
+    print(f"results saved at deep_3drecon/checkpoints/facerecon/results/")    

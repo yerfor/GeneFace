@@ -22,7 +22,7 @@ wait
 python data_util/process.py --video_id=$1 --task=9
 # 8. calculate audio features
 python data_gen/nerf/extract_hubert_mel_f0.py --video_id=$1
-# 9. calculate 3DMM (you should run this with `process_lrs3`` python interpreter)
-/home/yezhenhui/anaconda3/envs/process_lrs3/bin/python data_gen/nerf/extract_3dmm.py --video_id=$VIDEO_ID
-
-python data_gen/nerf/binarizer.py --config=egs/datasets/videos/${VIDEO_ID}/lm3d_nerf.yaml
+# 9. calculate 3DMM 
+python data_gen/nerf/extract_3dmm.py --video_id=$VIDEO_ID
+# binarize the dataset into `data/binary/videos/{VIDEO_ID}/trainval_dataset.npy`
+python data_gen/nerf/binarizer.py --config=egs/datasets/videos/${VIDEO_ID}/lm3d_radnerf.yaml

@@ -42,7 +42,7 @@ if __name__ == '__main__':
     
     import glob,tqdm
     prefixs = ['val', 'train']
-    binarized_ds_path = "/home/yezhenhui/datasets/binary/lrs3_pt"
+    binarized_ds_path = "data/binary/lrs3"
     os.makedirs(binarized_ds_path, exist_ok=True)
     for prefix in prefixs:
         databuilder = IndexedDatasetBuilder(os.path.join(binarized_ds_path, prefix), gzip=False)
