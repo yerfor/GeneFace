@@ -23,7 +23,7 @@ scheduler: none
 num_ckpt_keep: 500
 val_check_interval: 1000
 valid_infer_interval: 1000
-max_updates: 12000
+max_updates: 20000
 
 # Pretrained Ckpts
 audio2motion_work_dir: checkpoints/lrs3/lm3d_vae/

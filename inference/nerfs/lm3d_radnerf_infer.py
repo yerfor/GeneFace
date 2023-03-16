@@ -60,7 +60,7 @@ class LM3d_RADNeRFInfer(LM3dNeRFInfer):
         idexp_lm3d_normalized[:,36:48,2] = torch.clamp(idexp_lm3d_normalized[:,36:48,2], -lm3d_clamp_std, lm3d_clamp_std) # eye_z
         idexp_lm3d_normalized[:,48:68] = torch.clamp(idexp_lm3d_normalized[:,48:68], -lm3d_clamp_std, lm3d_clamp_std) # mouth
         
-        _lambda_other = 0.35
+        _lambda_other = 0.2
         _lambda_lip = 0.2
         moving_lm = idexp_lm3d_normalized[0].clone()
         for i in range(len(idexp_lm3d_normalized)):

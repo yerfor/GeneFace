@@ -16,7 +16,7 @@ conda install pytorch3d=0.7.2 -c pytorch3d -y
 # other dependencies
 pip install -r docs/prepare_env/requirements.txt 
 # install torch-ngp cuda extensions
-bash scripts/install_ext.sh
+bash docs/prepare_env/install_ext.sh
 
 ```
 
