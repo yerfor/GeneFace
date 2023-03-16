@@ -38,7 +38,7 @@ After the above steps, the structure of your `checkpoints` and `data` directory 
         > lm3d_vae_sync
         > syncnet
     > May
-        > postnet
+        > lm3d_postnet_sync
         > lm3d_radnerf
         > lm3d_radnerf_torso
 > data
