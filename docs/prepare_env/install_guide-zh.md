@@ -6,18 +6,16 @@
 ```
 conda create -n geneface python=3.9 -y
 conda activate geneface
-# for newer GPUs (e.g., RTX3090)
+# install pytorch with conda, older versions also work
 conda install pytorch=1.12 torchvision cudatoolkit=11.3 -c pytorch -c nvidia -y
-# for older GPUs (e.g., RTX2080)
 # install pytorch-3d
 conda install -c fvcore -c iopath -c conda-forge fvcore iopath -y
 conda install -c bottler nvidiacub -y
 conda install pytorch3d=0.7.2 -c pytorch3d -y
-# other dependencies
+# other dependencies, including tensorflow-gpu=2.x
 pip install -r docs/prepare_env/requirements.txt 
 # install torch-ngp cuda extensions
 bash docs/prepare_env/install_ext.sh
-
 ```
 
 # 2. 准备 3DMM 模型
@@ -68,7 +66,7 @@ wget https://github.com/mozilla/DeepSpeech/releases/download/v0.9.2/deepspeech-0
 ```
 # 跑通 deep_3drecon_pytorch 项目的原始example
 cd <root_dir>
-conda activate process_lrs3
+conda activate geneface
 export PYTHONPATH=./
 CUDA_VISIBLE_DEVICES=0 python deep_3drecon/test.py 
 
