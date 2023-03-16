@@ -27,7 +27,7 @@
 
 步骤2：下载`lrs3.zip`和`May.zip`文件，并将其解压在`checkpoints`文件夹中。
 
-步骤3：下载我们处理好的`May.mp4`的数据集文件`trainval_dataset.npy`（大约500 MB），[链接](https://drive.google.com/file/d/1bqLSESYzfXPHlFt0j-oXAnM88ZeUG-Y9/view?usp=share_link)，并将其移动到`data/binary/videos/May/trainval_dataset.npy`路径中。
+步骤3：根据`docs/process_data/zh/process_target_person_video-zh.md`的指引，处理`May.mp4`文件，得到数据集文件`data/binary/videos/May/trainval_dataset.npy`。
 
 做完上面的步骤后，您的 `checkpoints`和`data` 文件夹的结构应该是这样的：
 

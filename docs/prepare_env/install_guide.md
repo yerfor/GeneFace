@@ -59,12 +59,6 @@ python convert_BFM.py
 ```
 This will generate `data_util/face_tracking/3DMM/3DMM_info.npy`.
 
-## 2.6 download deepspeech model
-
-```
-cd data_util/deepspeech_features
-wget https://github.com/mozilla/DeepSpeech/releases/download/v0.9.2/deepspeech-0.9.2-models.pbmm
-```
 
 # 3. Verification of the Installation
 
