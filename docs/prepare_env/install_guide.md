@@ -3,7 +3,7 @@
 
 This guide is about building a python environment for GeneFace.
 
-The following installation process is verified in RTX3090, Ubuntu 18.04. It may also work in newer environments (such as RTX3090 + ) with small modifications (such as changing a newer CUDA version).
+The following installation process is verified in RTX3090, Ubuntu 18.04.
 
 # 1. Install the python libraries
 
