@@ -14,7 +14,8 @@
 
 
 ## 🔥新闻:
-- `2023.3.20` 我们在[这个release](https://github.com/yerfor/GeneFace/releases/tag/v1.1.0)做出了重大的更新，我们提供了一个[demo](assets/zozo_radnerf_torso_smo.mp4)。本次更新包括：1) 基于RAD-NeRF的渲染器，它可以做到实时渲染，并且训练时间缩短到10小时。2) 基于pytorch的`deep3d_recon`模块,相比起之前使用的Tensorflow版本，它更容易安装，并且推理速度快8倍。 3) 音高感知的`audio2motion`模块，相比原先的版本可以生成更加准确的唇形。4) 解决了一些导致过多内存占用的bug。5)我们会在四月上传最新的论文。
+- `2023.3.16` 我们在[这个release](https://github.com/yerfor/GeneFace/releases/tag/v1.1.0)做出了重大的更新，我们提供了一个[demo](assets/zozo_radnerf_torso_smo.mp4)。本次更新包括：1) 基于RAD-NeRF的渲染器，它可以做到实时渲染，并且训练时间缩短到10小时。2) 基于pytorch的`deep3d_recon`模块,相比起之前使用的Tensorflow版本，它更容易安装，并且推理速度快8倍。 3) 音高感知的`audio2motion`模块，相比原先的版本可以生成更加准确的唇形。4) 解决了一些导致过多内存占用的bug。5)我们会在四月上传最新的论文。
+
 - `2023.2.22` 我们发布了一段一分钟的[Demo视频](https://geneface.github.io/GeneFace/how_i_want_to_say_goodbye.mp4)，在其中GeneFace由[DiffSinger](https://github.com/MoonInTheRiver/DiffSinger)生成的一段中文歌曲所驱动，并能够产生准确的嘴形。
 - `2023.2.20` 我们发布了一个稳定版本的3D landmark后处理逻辑，位于 `inference/nerfs/lm3d_nerf_infer.py`，它大大提升了最终合成的视频的稳定性和质量。
 
