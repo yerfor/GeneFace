@@ -18,7 +18,11 @@ conda install -c bottler nvidiacub -y
 conda install pytorch3d=0.7.2 -c pytorch3d -y
 # other dependencies, including tensorflow-gpu=2.x
 pip install -r docs/prepare_env/requirements.txt 
+
 # install torch-ngp cuda extensions
+# NOTE: you need to manually install CUDA with the same version of pytorch (in this case, v11.3)
+# make sure your cuda path (typically /usr/local/cuda) points to a installed `/usr/local/cuda-11.3`
+# then run:
 bash docs/prepare_env/install_ext.sh
 ```
 
