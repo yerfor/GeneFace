@@ -15,7 +15,7 @@ conda install pytorch=1.12 torchvision cudatoolkit=11.3 -c pytorch -c nvidia -y
 # install pytorch-3d
 conda install -c fvcore -c iopath -c conda-forge fvcore iopath -y
 conda install -c bottler nvidiacub -y
-conda install pytorch3d=0.7.2 -c pytorch3d -y
+conda install pytorch3d -c pytorch3d -y # 0.7.2 recommended
 # other dependencies, including tensorflow-gpu=2.x
 pip install -r docs/prepare_env/requirements.txt 
 
@@ -26,7 +26,7 @@ pip install -r docs/prepare_env/requirements.txt
 bash docs/prepare_env/install_ext.sh
 ```
 
-If you find any error in python package compatility, you can refer to `docs/prepare_env/geneface_3090.yaml` for specific package versions.
+If you find any error in python package compatility, you can refer to `docs/prepare_env/geneface_*.yaml` for my tested specific package versions for different GPUs.
 
 # 2. Prepare the 3DMM model and other data
 
