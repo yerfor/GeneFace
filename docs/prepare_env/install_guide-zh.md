@@ -7,7 +7,7 @@
 conda create -n geneface python=3.9 -y
 conda activate geneface
 # install pytorch with conda, older versions also work
-conda install pytorch=1.12 torchvision cudatoolkit=11.3 -c pytorch -c nvidia -y
+conda install pytorch=1.12 torchvision cudatoolkit=11.3.1 -c pytorch -c nvidia -y
 # install pytorch-3d
 conda install -c fvcore -c iopath -c conda-forge fvcore iopath -y
 conda install -c bottler nvidiacub -y
@@ -16,7 +16,7 @@ conda install pytorch3d -c pytorch3d -y # 0.7.2 recommended
 pip install -r docs/prepare_env/requirements.txt 
 
 # install torch-ngp cuda extensions
-# NOTE: you need to manually install CUDA with the same version of pytorch (in this case, v11.3)
+# NOTE: you need to manually install CUDA with the same version of pytorch (in this case, v11.3.1)
 # make sure your cuda path (typically /usr/local/cuda) points to a installed `/usr/local/cuda-11.3`
 # then run:
 bash docs/prepare_env/install_ext.sh 
