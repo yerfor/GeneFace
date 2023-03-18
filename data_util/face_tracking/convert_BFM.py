@@ -2,7 +2,7 @@ import numpy as np
 from scipy.io import loadmat
 
 # original_BFM = loadmat('3DMM/01_MorphableModel.mat')
-original_BFM = loadmat('../deep_3drecon/BFM/01_MorphableModel.mat')
+original_BFM = loadmat('../../deep_3drecon/BFM/01_MorphableModel.mat')
 sub_inds = np.load('3DMM/topology_info.npy',
                    allow_pickle=True).item()['sub_inds']
 shapePC = original_BFM['shapePC']

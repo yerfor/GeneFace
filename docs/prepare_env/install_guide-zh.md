@@ -18,6 +18,8 @@ pip install -r docs/prepare_env/requirements.txt
 bash docs/prepare_env/install_ext.sh
 ```
 
+如果你在上述安装过程中遇到兼容性问题，可以参考`docs/prepare_env/geneface_*.yaml`文件，其中记录了我在不同型号GPU下安装成功的详细环境配置。
+
 # 2. 准备 3DMM 模型
 
 ## 2.1 下载 3DMM model

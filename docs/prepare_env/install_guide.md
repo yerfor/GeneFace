@@ -22,6 +22,8 @@ pip install -r docs/prepare_env/requirements.txt
 bash docs/prepare_env/install_ext.sh
 ```
 
+If you find any error in python package compatility, you can refer to `docs/prepare_env/geneface_3090.yaml` for specific package versions.
+
 # 2. Prepare the 3DMM model and other data
 
 ## 2.1 Download 3DMM model
