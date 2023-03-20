@@ -6,7 +6,9 @@
 🔥注意：由于我们转向新的3DMM提取器，我们更新了提供的lrs3数据集。您可能需要下载最新的数据集文件以与最新的代码兼容。
 
 由于LRS3数据集数据量较大（500小时+），其处理过程非常消耗计算资源，因此我们在百度云盘提供了处理好的LRS3数据集（总共约26GB）。如果你使用我们处理好的数据集，可以跳过下面的步骤1-3，直接进入步骤4，验证安装成功。
-- 下载链接：[分区1](https://drive.google.com/drive/folders/1QK_ikLKUzGYiqHBzvKz0s5zKWeH-sm3L?usp=sharing)，[分区2](https://drive.google.com/drive/folders/1WbECLfpxAZ0D7PcrlZxV-fCObT-TnfD8?usp=share_link)。
+- 谷歌网盘下载链接：[分区1](https://drive.google.com/drive/folders/1QK_ikLKUzGYiqHBzvKz0s5zKWeH-sm3L?usp=sharing)，[分区2](https://drive.google.com/drive/folders/1WbECLfpxAZ0D7PcrlZxV-fCObT-TnfD8?usp=share_link)。
+- 百度云盘下载链接：[链接](https://pan.baidu.com/s/1JsvEz58c9ItSI73ls43tTw?pwd=lrs3)，提取码:`lrs3`
+
 - 如何使用: 
     - 步骤1：将拆分的子文件还原成压缩包 `cat lrs3.zip.part_* > lrs3.zip` 。
     - 步骤2：将压缩包解压，并将其移动到 `data/binary/lrs3` 目录下。

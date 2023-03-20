@@ -8,7 +8,8 @@ We use LRS3 dataset to learn a robust audio2motion generator. It is also require
 🔥 Note: Since we turn to a new 3DMM extractor, we update the provided lrs3 dataset. You may need download the newest dataset file to be compatible with the latest code.
 
 Since LRS3 is quite big (500 hours+), it is expensive to process this dataset. For your convenience, we provide the binarized LRS3 dataset file (about 26 GB) on Google Drive. If you use the processed dataset, you can skip `step 1-3` below and go directly to `step 4` to verify the installation.
-- Download link: [Partition 1](https://drive.google.com/drive/folders/1QK_ikLKUzGYiqHBzvKz0s5zKWeH-sm3L?usp=share_link), [Partition 2](https://drive.google.com/drive/folders/1WbECLfpxAZ0D7PcrlZxV-fCObT-TnfD8?usp=share_link). 
+- Download Link on Google Drive: [Partition 1](https://drive.google.com/drive/folders/1QK_ikLKUzGYiqHBzvKz0s5zKWeH-sm3L?usp=share_link), [Partition 2](https://drive.google.com/drive/folders/1WbECLfpxAZ0D7PcrlZxV-fCObT-TnfD8?usp=share_link). 
+- Download Link on Baiduyun Disk: [link](https://pan.baidu.com/s/1JsvEz58c9ItSI73ls43tTw?pwd=lrs3), passward: `lrs3`
 - How to use: 
     - step1. Integrate the segments `cat lrs3.zip.part_* > lrs3.zip` .
     - step2. Unzip `processed_lrs3.zip` and place it into the `data/binary/lrs3` folder.
