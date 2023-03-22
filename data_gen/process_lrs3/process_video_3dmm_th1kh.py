@@ -102,7 +102,7 @@ def process_video_batch(fname_lst, out_name_lst=None):
     lm68s_lst = []
     lm5s_lst = []
     with Timer("mediapipe_faceAlign", True):
-        for (i, res) in multiprocess_run_tqdm(extract_lms_mediapipe_job, frames_lst, num_workers=4, desc="mediapipe is predicting face mesh in batch videos..."):
+        for (i, res) in multiprocess_run_tqdm(extract_lms_mediapipe_job, frames_lst, num_workers=2, desc="mediapipe is predicting face mesh in batch videos..."):
             if res is None:
                 res = (None, None, None)
             lm478s, lm68s, lm5s = res
@@ -197,7 +197,7 @@ if __name__ == '__main__':
     random.seed(111)
     random.shuffle(mp4_names)
     batched_mp4_names_lst = chunk(mp4_names, chunk_size=8)
-    for batch_mp4_names in tqdm(batched_mp4_names_lst, desc='extracting 3DMM...'):
+    for batch_mp4_names in tqdm(batched_mp4_names_lst, desc='[ROOT]: extracting face mesh and 3DMM in batches...'):
         try:
             for mp4_name in batch_mp4_names:
                 split_wav(mp4_name)
