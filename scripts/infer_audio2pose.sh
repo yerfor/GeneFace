@@ -1,6 +1,6 @@
-export CUDA_VISIBLE_DEVICES=3
-export Video_ID=Zhang2
-export Wav_ID=how_i_want_to_say_goodbye
+export CUDA_VISIBLE_DEVICES=0
+export Video_ID=May
+export Wav_ID=zozo
 
 python inference/audio2pose/audio2pose_infer.py \
     --config=checkpoints/${Video_ID}/audio2pose/config.yaml \
