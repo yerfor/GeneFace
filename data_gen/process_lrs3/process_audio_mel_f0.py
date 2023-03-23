@@ -44,7 +44,7 @@ def extract_mel_from_fname(wav_path,
     # get mel basis
     fmin = 0 if fmin == -1 else fmin
     fmax = sample_rate / 2 if fmax == -1 else fmax
-    mel_basis = librosa.filters.mel(sample_rate, fft_size, num_mels, fmin, fmax)
+    mel_basis = librosa.filters.mel(sr=sample_rate, n_fft=fft_size, n_mels=num_mels, fmin=fmin, fmax=fmax)
     mel = mel_basis @ spc
 
     mel = np.log10(np.maximum(eps, mel))  # (n_mel_bins, T)
