@@ -24,3 +24,4 @@ moviepy
 dearpygui
 ninja
 pyaudio # for extract esperanto
+mediapipe
