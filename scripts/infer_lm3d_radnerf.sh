@@ -1,5 +1,5 @@
 export PYTHONPATH=.
-export CUDA_VISIBLE_DEVICES=1
+export CUDA_VISIBLE_DEVICES=0
 # export CUDA_VISIBLE_DEVICES=0,1 # now we support multi-gpu inference!
 export Video_ID=May
 export Wav_ID=zozo # the .wav file should locate at `data/raw/val_wavs/<wav_id>.wav`
