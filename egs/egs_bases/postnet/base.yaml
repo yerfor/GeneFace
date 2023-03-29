@@ -26,7 +26,7 @@ valid_infer_interval: 1000
 max_updates: 20000
 
 # Pretrained Ckpts
-audio2motion_work_dir: checkpoints/lrs3/lm3d_vae/
+audio2motion_work_dir: checkpoints/lrs3/lm3d_vae_sync/
 audio2motion_ckpt_steps: 40000
 syncnet_work_dir: checkpoints/lrs3/syncnet
 syncnet_ckpt_steps: 40000
