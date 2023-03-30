@@ -91,8 +91,8 @@ class PostnetDataset(torch.utils.data.Dataset):
     def get_dataloader(self):
         max_tokens = 60000
         batches_idx = self.audio2motion_ds.batch_by_size(self.audio2motion_ds.ordered_indices(), max_tokens=max_tokens)
-        loader = DataLoader(self, pin_memory=False,collate_fn=self.collater, batch_sampler=batches_idx, num_workers=0)
-        # loader = DataLoader(self, pin_memory=False,collate_fn=self.collater, batch_sampler=batches_idx, num_workers=4)
+        # loader = DataLoader(self, pin_memory=False,collate_fn=self.collater, batch_sampler=batches_idx, num_workers=0)
+        loader = DataLoader(self, pin_memory=True,collate_fn=self.collater, batch_sampler=batches_idx, num_workers=4)
         return loader
 
 if __name__ == '__main__':
