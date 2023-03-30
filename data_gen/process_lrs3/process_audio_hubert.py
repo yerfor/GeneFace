@@ -49,11 +49,17 @@ def get_hubert_from_16k_speech(speech, device="cuda:0"):
         input_values = input_values_all[:, clip_length * num_iter:]
     else:
         input_values = input_values_all
-    if input_values.shape[1] != 0:
+    # if input_values.shape[1] != 0:
+    if input_values.shape[1] >= kernel: # if the last batch is shorter than kernel_size, skip it            
         hidden_states = hubert_model(input_values).last_hidden_state # [B=1, T=pts//320, hid=1024]
         res_lst.append(hidden_states[0])
-    ret = torch.cat(res_lst, dim=0).cpu()
-    assert ret.shape[0] == expected_T
+    ret = torch.cat(res_lst, dim=0).cpu() # [T, 1024]
+    # assert ret.shape[0] == expected_T
+    assert abs(ret.shape[0] - expected_T) <= 1
+    if ret.shape[0] < expected_T:
+        ret = torch.nn.functional.pad(ret, (0,0,0,expected_T-ret.shape[0]))
+    else:
+        ret = ret[:expected_T]
     return ret
 
 
