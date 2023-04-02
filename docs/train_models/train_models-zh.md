@@ -18,7 +18,7 @@ GeneFace 包含三个模块：1）一个训练于LRS3数据集并通用于所有
 ```
 conda activate geneface
 export PYTHONPATH=./
-CUDA_VISIBLE_DEVICES=0 python tasks/run.py --config=egs/datasets/lrs3/lm3d_syncnet.yaml --exp_name=checkpoints/lrs3/syncnet
+CUDA_VISIBLE_DEVICES=0 python tasks/run.py --config=egs/datasets/lrs3/lm3d_syncnet.yaml --exp_name=lrs3/syncnet
 ```
 
 注意SyncNet模型适用于所有说话人视频，所以你只需要训练它一次！
@@ -32,7 +32,7 @@ CUDA_VISIBLE_DEVICES=0 python tasks/run.py --config=egs/datasets/lrs3/lm3d_syncn
 ```
 conda activate geneface
 export PYTHONPATH=./
-CUDA_VISIBLE_DEVICES=0 python tasks/run.py --config=egs/datasets/videos/lrs3/lm3d_vae_sync.yaml --exp_name=checkpoints/lrs3/lm3d_vae_sync
+CUDA_VISIBLE_DEVICES=0 python tasks/run.py --config=egs/datasets/videos/lrs3/lm3d_vae_sync.yaml --exp_name=lrs3/lm3d_vae_sync
 ```
 
 注意名为 `lm3d_vae_sync`的audio2motion模型适用于所有说话人视频，所以你只需要训练它一次！
@@ -46,7 +46,7 @@ CUDA_VISIBLE_DEVICES=0 python tasks/run.py --config=egs/datasets/videos/lrs3/lm3
 ```
 conda activate geneface
 export PYTHONPATH=./
-CUDA_VISIBLE_DEVICES=0 python tasks/run.py --config=egs/datasets/videos/May/lm3d_postnet_sync.yaml --exp_name=checkpoints/May/postnet
+CUDA_VISIBLE_DEVICES=0 python tasks/run.py --config=egs/datasets/videos/May/lm3d_postnet_sync.yaml --exp_name=May/postnet
 ```
 
 注意postnet模型仅适用于对应的说话人视频，所以对每个新的说话人视频你都需要训练一个新的postnet。
@@ -85,9 +85,9 @@ RAD-NeRF利用instant-ngp对NeRF的训练效率和推理速度进行了巨大的
 conda activate geneface
 export PYTHONPATH=./
 # Train the head rad_nerf, it takes about 6 hours in one RTX3090Ti
-CUDA_VISIBLE_DEVICES=0 python tasks/run.py --config=egs/datasets/videos/May/lm3d_radnerf.yaml --exp_name=checkpoints/May/lm3d_nerf
+CUDA_VISIBLE_DEVICES=0 python tasks/run.py --config=egs/datasets/videos/May/lm3d_radnerf.yaml --exp_name=May/lm3d_nerf
 # Train the torso rad_nerf, it takes about 4 hours in one RTX3090Ti
-CUDA_VISIBLE_DEVICES=0 python tasks/run.py --config=egs/datasets/videos/May/lm3d_radnerf_torso.yaml --exp_name=checkpoints/May/lm3d_nerf_torso
+CUDA_VISIBLE_DEVICES=0 python tasks/run.py --config=egs/datasets/videos/May/lm3d_radnerf_torso.yaml --exp_name=May/lm3d_nerf_torso
 ```
 
 注意NeRF模型仅适用于对应的说话人视频，所以对每个新的说话人视频你都需要训练一个新的NeRF模型。
@@ -101,9 +101,9 @@ CUDA_VISIBLE_DEVICES=0 python tasks/run.py --config=egs/datasets/videos/May/lm3d
 conda activate geneface
 export PYTHONPATH=./
 # Train the head nerf, it takes about 30 hours on a RTX3090Ti
-CUDA_VISIBLE_DEVICES=0 python tasks/run.py --config=egs/datasets/videos/May/lm3d_nerf.yaml --exp_name=checkpoints/May/lm3d_nerf
+CUDA_VISIBLE_DEVICES=0 python tasks/run.py --config=egs/datasets/videos/May/lm3d_nerf.yaml --exp_name=May/lm3d_nerf
 # Train the torso nerf, it takes about 36 hours on a RTX3090Ti
-CUDA_VISIBLE_DEVICES=0 python tasks/run.py --config=egs/datasets/videos/May/lm3d_nerf_torso.yaml --exp_name=checkpoints/May/lm3d_nerf_torso
+CUDA_VISIBLE_DEVICES=0 python tasks/run.py --config=egs/datasets/videos/May/lm3d_nerf_torso.yaml --exp_name=May/lm3d_nerf_torso
 ```
 注意：基于原始NeRF的图像渲染器的推理过程相对较慢(使用RTX2080Ti渲染250帧512x512分辨率的图像需要大约2个小时)。可以通过将`——n_samples_per_ray`和`——n_samples_per_ray_fine`设置为较低的值来部分缓解这个问题。不过由于实现了对RAD-NeRF的支持，推理速度已经不再是问题。
 

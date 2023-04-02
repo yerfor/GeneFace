@@ -20,7 +20,7 @@ If you want to train a SyncNet from scratch, please run the following commandlin
 ```
 conda activate geneface
 export PYTHONPATH=./
-CUDA_VISIBLE_DEVICES=0 python tasks/run.py --config=egs/datasets/lrs3/lm3d_syncnet.yaml --exp_name=checkpoints/lrs3/syncnet
+CUDA_VISIBLE_DEVICES=0 python tasks/run.py --config=egs/datasets/lrs3/lm3d_syncnet.yaml --exp_name=lrs3/syncnet
 ```
 
 Note that SyncNet is a generic model for all possible target person videos, so you only to train it once!
@@ -34,7 +34,7 @@ If you want to train a audio2motion model from scratch, please run the following
 ```
 conda activate geneface
 export PYTHONPATH=./
-CUDA_VISIBLE_DEVICES=0 python tasks/run.py --config=egs/datasets/videos/lrs3/lm3d_vae_sync.yaml --exp_name=checkpoints/lrs3/lm3d_vae_sync
+CUDA_VISIBLE_DEVICES=0 python tasks/run.py --config=egs/datasets/videos/lrs3/lm3d_vae_sync.yaml --exp_name=lrs3/lm3d_vae_sync
 ```
 
 Note that the Audio2motion model named `lm3d_vae_sync` is a generic model for all possible target person videos, so you only to train it once!
@@ -48,7 +48,7 @@ If you want to train a postnet model from scratch, please run the following comm
 ```
 conda activate geneface
 export PYTHONPATH=./
-CUDA_VISIBLE_DEVICES=0 python tasks/run.py --config=egs/datasets/videos/May/lm3d_postnet_sync.yaml --exp_name=checkpoints/May/postnet
+CUDA_VISIBLE_DEVICES=0 python tasks/run.py --config=egs/datasets/videos/May/lm3d_postnet_sync.yaml --exp_name=May/postnet
 ```
 
 Note that the Post-net is person-specific, so for each target person video, you need to train a new Post-net.
@@ -88,9 +88,9 @@ If you want to train a RAD-NeRF model from scratch, please run the following com
 conda activate geneface
 export PYTHONPATH=./
 # Train the head rad_nerf, it takes about 6 hours in one RTX3090Ti
-CUDA_VISIBLE_DEVICES=0 python tasks/run.py --config=egs/datasets/videos/May/lm3d_radnerf.yaml --exp_name=checkpoints/May/lm3d_nerf
+CUDA_VISIBLE_DEVICES=0 python tasks/run.py --config=egs/datasets/videos/May/lm3d_radnerf.yaml --exp_name=May/lm3d_nerf
 # Train the torso rad_nerf, it takes about 4 hours in one RTX3090Ti
-CUDA_VISIBLE_DEVICES=0 python tasks/run.py --config=egs/datasets/videos/May/lm3d_radnerf_torso.yaml --exp_name=checkpoints/May/lm3d_nerf_torso
+CUDA_VISIBLE_DEVICES=0 python tasks/run.py --config=egs/datasets/videos/May/lm3d_radnerf_torso.yaml --exp_name=May/lm3d_nerf_torso
 ```
 
 Note that the NeRF-based renderer is person-specific, so for each target person video, you need to train a new NeRF-based renderer.
@@ -103,9 +103,9 @@ Note: As pointed out in [this issue](https://github.com/yerfor/GeneFace/issues/1
 conda activate geneface
 export PYTHONPATH=./
 # Train the head nerf, it takes about 30 hours on a RTX3090Ti
-CUDA_VISIBLE_DEVICES=0 python tasks/run.py --config=egs/datasets/videos/May/lm3d_nerf.yaml --exp_name=checkpoints/May/lm3d_nerf
+CUDA_VISIBLE_DEVICES=0 python tasks/run.py --config=egs/datasets/videos/May/lm3d_nerf.yaml --exp_name=May/lm3d_nerf
 # Train the torso nerf, it takes about 36 hours on a RTX3090Ti
-CUDA_VISIBLE_DEVICES=0 python tasks/run.py --config=egs/datasets/videos/May/lm3d_nerf_torso.yaml --exp_name=checkpoints/May/lm3d_nerf_torso
+CUDA_VISIBLE_DEVICES=0 python tasks/run.py --config=egs/datasets/videos/May/lm3d_nerf_torso.yaml --exp_name=May/lm3d_nerf_torso
 ```
 The inference process for the vanilla Nerf-based renderer is very slow (it takes about 2 hours to render 250 frames of 512x512 resolution images using RTX2080Ti). This problem can be partially mitigated by setting `--n_samples_per_ray` and `--n_samples_per_ray_fine` to lower values. However, with the implementation of RAD-NeRF, inference speed is no longer an issue for GeneFace.
 
