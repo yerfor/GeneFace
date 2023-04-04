@@ -76,18 +76,20 @@ python utils/visualization/lm_visualizer.py # visualize the 3D landmark sequence
 你能在输出路径中看到可视化的3d landmark视频。
 
 ## 步骤4. 训练基于RAD-NeRF的渲染器
+
 RAD-NeRF利用instant-ngp对NeRF的训练效率和推理速度进行了巨大的提升，我们推荐使用RAD-NeRF作为NeRF的后端。RAD-NeRF的训练速度是原始NeRF的6倍，并且可以实现实时推理，并且渲染质量和原始NeRF十分接近。
 
 注意：我们在[这个链接](https://github.com/yerfor/GeneFace/releases/tag/v1.1.0)的 `May.zip`文件中提供了专用于 `data/raw/videos/May.mp4`视频的预训练好的RAD-NeRF模型,你可以将其下载并提取出其中的 `lm3d_radnerf`和 `lm3d_radnerf_torso`文件夹，并将它放到 `checkpoints/May/lm3d_radnerf`和 `checkpoints/May/lm3d_radnerf_torso`路径中。
 
 如果你想要从头训练RAD-NeRF模型，请执行以下命令行（你需要首先准备好LRS3数据集和对应的说话人视频数据集），在RTX3090上训练大约花费10小时。
+
 ```
 conda activate geneface
 export PYTHONPATH=./
 # Train the head rad_nerf, it takes about 6 hours in one RTX3090Ti
-CUDA_VISIBLE_DEVICES=0 python tasks/run.py --config=egs/datasets/videos/May/lm3d_radnerf.yaml --exp_name=May/lm3d_nerf
+CUDA_VISIBLE_DEVICES=0 python tasks/run.py --config=egs/datasets/videos/May/lm3d_radnerf.yaml --exp_name=May/lm3d_radnerf
 # Train the torso rad_nerf, it takes about 4 hours in one RTX3090Ti
-CUDA_VISIBLE_DEVICES=0 python tasks/run.py --config=egs/datasets/videos/May/lm3d_radnerf_torso.yaml --exp_name=May/lm3d_nerf_torso
+CUDA_VISIBLE_DEVICES=0 python tasks/run.py --config=egs/datasets/videos/May/lm3d_radnerf_torso.yaml --exp_name=May/lm3d_radnerf_torso
 ```
 
 注意NeRF模型仅适用于对应的说话人视频，所以对每个新的说话人视频你都需要训练一个新的NeRF模型。
@@ -97,6 +99,7 @@ CUDA_VISIBLE_DEVICES=0 python tasks/run.py --config=egs/datasets/videos/May/lm3d
 尽管推荐使用RAD-NeRF，为了完整性，我们仍然保留了基于原始NeRF的渲染器。你可以利用下面的命令行对其进行训练。在RTX3090上训练大约花费60小时。
 
 注意：如[这个issue](https://github.com/yerfor/GeneFace/issues/18)里面指出的，由于NeRF非常依赖于初始化参数，你可能需要重复执行几次训练命令，直到NeRF的loss得以正常下降。
+
 ```
 conda activate geneface
 export PYTHONPATH=./
@@ -105,7 +108,8 @@ CUDA_VISIBLE_DEVICES=0 python tasks/run.py --config=egs/datasets/videos/May/lm3d
 # Train the torso nerf, it takes about 36 hours on a RTX3090Ti
 CUDA_VISIBLE_DEVICES=0 python tasks/run.py --config=egs/datasets/videos/May/lm3d_nerf_torso.yaml --exp_name=May/lm3d_nerf_torso
 ```
-注意：基于原始NeRF的图像渲染器的推理过程相对较慢(使用RTX2080Ti渲染250帧512x512分辨率的图像需要大约2个小时)。可以通过将`——n_samples_per_ray`和`——n_samples_per_ray_fine`设置为较低的值来部分缓解这个问题。不过由于实现了对RAD-NeRF的支持，推理速度已经不再是问题。
+
+注意：基于原始NeRF的图像渲染器的推理过程相对较慢(使用RTX2080Ti渲染250帧512x512分辨率的图像需要大约2个小时)。可以通过将 `——n_samples_per_ray`和 `——n_samples_per_ray_fine`设置为较低的值来部分缓解这个问题。不过由于实现了对RAD-NeRF的支持，推理速度已经不再是问题。
 
 ## 步骤5. 使用GeneFace生成说话人视频
 
@@ -116,5 +120,3 @@ CUDA_VISIBLE_DEVICES=0 python tasks/run.py --config=egs/datasets/videos/May/lm3d
 bash scripts/infer_postnet.sh
 bash scripts/infer_lm3d_radnerf.sh
 ```
-
-

@@ -78,6 +78,7 @@ python utils/visualization/lm_visualizer.py # visualize the 3D landmark sequence
 You can see the visualized 3d landmark video in the output path.
 
 ## Step4. Train the RAD-NeRF-based Render
+
 RAD-NeRF uses instant-ngp to improve the training and inference speed of NeRF. We recommend using RAD-NeRF as the backend of NeRF-based renderer. RAD-NeRF is 6x faster than NeRF in training, and could infer in real-time, with similar rendering quality to the vanilla NeRF.
 
 NOTE: We provide the pre-trained RAD-NeRF model for the target person video named `data/raw/videos/May.mp4` in `May.zip` at [this link](https://github.com/yerfor/GeneFace/releases/tag/v1.1.0), you can download it and extract the `lm3d_radnerf` and `lm3d_radnerf_torso` folder, then place it into the path `checkpoints/May/lm3d_radnerf` and `checkpoints/May/lm3d_radnerf_torso`, respectively.
@@ -88,17 +89,19 @@ If you want to train a RAD-NeRF model from scratch, please run the following com
 conda activate geneface
 export PYTHONPATH=./
 # Train the head rad_nerf, it takes about 6 hours in one RTX3090Ti
-CUDA_VISIBLE_DEVICES=0 python tasks/run.py --config=egs/datasets/videos/May/lm3d_radnerf.yaml --exp_name=May/lm3d_nerf
+CUDA_VISIBLE_DEVICES=0 python tasks/run.py --config=egs/datasets/videos/May/lm3d_radnerf.yaml --exp_name=May/lm3d_radnerf
 # Train the torso rad_nerf, it takes about 4 hours in one RTX3090Ti
-CUDA_VISIBLE_DEVICES=0 python tasks/run.py --config=egs/datasets/videos/May/lm3d_radnerf_torso.yaml --exp_name=May/lm3d_nerf_torso
+CUDA_VISIBLE_DEVICES=0 python tasks/run.py --config=egs/datasets/videos/May/lm3d_radnerf_torso.yaml --exp_name=May/lm3d_radnerf_torso
 ```
 
 Note that the NeRF-based renderer is person-specific, so for each target person video, you need to train a new NeRF-based renderer.
 
 ### Legacy: Train the vanilla NeRF-based renderer in the GeneFace paper
+
 Although the use of RAD-NeRF is recommended, we still support the vanilla NeRF-based renderer for completeness. You can train it with the following command line. It takes about 60 hours on a RTX3090Ti.
 
 Note: As pointed out in [this issue](https://github.com/yerfor/GeneFace/issues/18), since NeRF requires good initilization, you may need to run the commandline several times, until the loss converges normally.
+
 ```
 conda activate geneface
 export PYTHONPATH=./
@@ -107,6 +110,7 @@ CUDA_VISIBLE_DEVICES=0 python tasks/run.py --config=egs/datasets/videos/May/lm3d
 # Train the torso nerf, it takes about 36 hours on a RTX3090Ti
 CUDA_VISIBLE_DEVICES=0 python tasks/run.py --config=egs/datasets/videos/May/lm3d_nerf_torso.yaml --exp_name=May/lm3d_nerf_torso
 ```
+
 The inference process for the vanilla Nerf-based renderer is very slow (it takes about 2 hours to render 250 frames of 512x512 resolution images using RTX2080Ti). This problem can be partially mitigated by setting `--n_samples_per_ray` and `--n_samples_per_ray_fine` to lower values. However, with the implementation of RAD-NeRF, inference speed is no longer an issue for GeneFace.
 
 ## Step5. Inference!
