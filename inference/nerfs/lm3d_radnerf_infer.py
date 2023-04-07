@@ -69,7 +69,7 @@ class LM3d_RADNeRFInfer(LM3dNeRFInfer):
             idexp_lm3d_normalized[i,27:36] = _lambda_other * moving_lm[27:36] + (1 - _lambda_other) * idexp_lm3d_normalized[i,27:36] # nose
             idexp_lm3d_normalized[i,36:48] = _lambda_other * moving_lm[36:48] + (1 - _lambda_other) * idexp_lm3d_normalized[i,36:48] # eye
             idexp_lm3d_normalized[i,48:68] = _lambda_lip * moving_lm[48:68] + (1 - _lambda_lip) * idexp_lm3d_normalized[i,48:68]
-        
+            moving_lm.data = idexp_lm3d_normalized[i].data
 
         idexp_lm3d_normalized = idexp_lm3d_normalized.reshape([-1,68*3])
         from data_gen.nerf.binarizer import get_win_conds
