@@ -35,7 +35,7 @@ Then run these commandlines: (You may need to modify the directory name of raw l
 ```
 conda activate geneface
 CUDA_VISIBLE_DEVICES=0 python data_gen/process_lrs3/process_video_3dmm.py # extract 3dmm motion representations
-CUDA_VISIBLE_DEVICES=0 python data_gen/process_lrs3/process_audio_mel.py # extract mel spectrogram
+CUDA_VISIBLE_DEVICES=0 python data_gen/process_lrs3/process_audio_mel_f0.py # extract mel spectrogram
 CUDA_VISIBLE_DEVICES=0 python data_gen/process_lrs3/process_audio_hubert.py # extract hubert audio representations
 
 ```
