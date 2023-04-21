@@ -1,16 +1,17 @@
 # Prepare the Environment
+
 [中文文档](./install_guide-zh.md)
 
 This guide is about building a python environment for GeneFace.
 
 The following installation process is verified in RTX3090, Ubuntu 18.04.
 
-
 # 1. Install CUDA
+
 We use CUDA extensions from [torch-ngp](https://github.com/ashawkey/torch-ngp), you may need to manually install CUDA from the [offcial page](https://developer.nvidia.com/cuda-toolkit). We recommend to install CUDA `11.3` (which is verified in various types of GPUs), but other CUDA versions (such as `10.2`) may also work well. Make sure your cuda path (typically `/usr/local/cuda`) points to a installed `/usr/local/cuda-11.3`
 
-
 # 2. Install Python Packages
+
 ```
 conda create -n geneface python=3.9.16 -y
 conda activate geneface
@@ -23,6 +24,7 @@ conda install pytorch3d -c pytorch3d -y # 0.7.2 recommended
 # Install other dependencies, including tensorflow-gpu=2.x
 sudo apt-get install libasound2-dev portaudio19-dev # dependency for pyaudio
 pip install -r docs/prepare_env/requirements.txt 
+conda install ffmpeg # we need to install ffmpeg from anaconda to include the x264 encoder
 
 # Build customized cuda extensions from torch-ngp
 # NOTE: you need to manually install CUDA with the same version of pytorch (in this case, CUDA v11.3)
@@ -52,23 +54,23 @@ Download at [this link](https://drive.google.com/drive/folders/1YCxXKJFfo1w01Pza
 
 Extract the `BFM_model_front.mat` and place it to the `./deep_3drecon/BFM` directory.
 
-
 ## 3.4 Download FaceRecon Model
 
 Download at [this link](https://drive.google.com/drive/folders/18VRcygXYOKPYvJWsl9lrF0J9PoFPk77y?usp=sharing)
 
 Extract the `epoch_20.pth` and place it to the `./deep_3drecon/checkpoints/facerecon` directory.
 
-
 ## 3.5 generate files for face_tracking (used by all NeRFs)
+
 Then run the following commandlines:
+
 ```
 cd data_util/face_tracking
 conda activate geneface
 python convert_BFM.py
 ```
-This will generate `data_util/face_tracking/3DMM/3DMM_info.npy`.
 
+This will generate `data_util/face_tracking/3DMM/3DMM_info.npy`.
 
 # 4. Verification of the Installation
 
@@ -87,5 +89,3 @@ CUDA_VISIBLE_DEVICES=0 python
 import deep_3drecon
 face_reconstructor = deep_3drecon.Reconstructor()
 ```
-
-
