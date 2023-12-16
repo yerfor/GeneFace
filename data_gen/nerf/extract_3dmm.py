@@ -10,6 +10,7 @@ import face_alignment
 import deep_3drecon
 from moviepy.editor import VideoFileClip
 import copy
+import psutil
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
@@ -39,31 +40,39 @@ def process_video(fname, out_name=None, skip_tmp=True):
     #     return
     os.system(f"touch {tmp_name}")
     cap = cv2.VideoCapture(fname)
-    lm68_lst = []
-    lm5_lst = []
-    frames = []
-    cnt = 0
     print(f"loading video ...")
+    # 获取视频相关参数
+    num_frames = int(cap.get(7))
+    h = int(cap.get(4))
+    w = int(cap.get(3))
+    # 检测系统资源是否充足
+    mem = psutil.virtual_memory()
+    a_mem = mem.available
+    min_mem=num_frames*68*2 + num_frames*5*2 + num_frames*h*w*3
+    if a_mem < min_mem:
+        print(f"WARNING: The physical memory is insufficient, which may result in memory swapping. Available Memory: {a_mem/1000000:.3f}M, the minimum memory required is:{min_mem/1000000:.3f}M.")
+    # 初始化矩阵
+    lm68_arr=np.empty((num_frames, 68, 2),dtype=np.float32)
+    lm5_arr=np.empty((num_frames, 5, 2),dtype=np.float32)
+    video_rgb=np.empty((num_frames, h, w, 3),dtype=np.uint8)
+    cnt=0
     while cap.isOpened():
         ret, frame_bgr = cap.read()
         if frame_bgr is None:
             break
         frame_rgb = cv2.cvtColor(frame_bgr, cv2.COLOR_BGR2RGB)
-        frames.append(frame_rgb)
+        video_rgb[cnt]=frame_rgb
         cnt += 1
-    for i in trange(cnt, desc="extracting 2D facial landmarks ..."):
+    for i in trange(num_frames, desc="extracting 2D facial landmarks ..."):
         try:
-            lm68 = fa.get_landmarks(frames[i])[0] # 识别图片中的人脸，获得角点, shape=[68,2]
+            lm68 = fa.get_landmarks(video_rgb[i])[0] # 识别图片中的人脸，获得角点, shape=[68,2]
         except:
-            print(f"WARNING: Caught errors when fa.get_landmarks, maybe No face detected at frame {cnt} in {fname}!")
+            print(f"WARNING: Caught errors when fa.get_landmarks, maybe No face detected at frame {i} in {fname}!")
             raise ValueError("")
         lm5 = lm68_2_lm5(lm68)
-        lm68_lst.append(lm68)
-        lm5_lst.append(lm5)
-    video_rgb = np.stack(frames) # [t, 224,224, 3]
-    lm68_arr = np.stack(lm68_lst).reshape([cnt, 68, 2])
-    lm5_arr = np.stack(lm5_lst).reshape([cnt, 5, 2])
-    num_frames = cnt
+        lm68_arr[i]=lm68
+        lm5_arr[i]=lm5
+    # num_frames = cnt
     batch_size = 32
     iter_times = num_frames // batch_size
     last_bs = num_frames % batch_size
@@ -82,8 +91,8 @@ def process_video(fname, out_name=None, skip_tmp=True):
     coeff_arr = np.concatenate(coeff_lst,axis=0)
     result_dict = {
         'coeff': coeff_arr.reshape([cnt, -1]),
-        'lm68': lm68_arr.reshape([cnt, 68, 2]),
-        'lm5': lm5_arr.reshape([cnt, 5, 2]),
+        'lm68': lm68_arr,
+        'lm5': lm5_arr,
     }
     np.save(out_name, result_dict)
     os.system(f"rm {tmp_name}")

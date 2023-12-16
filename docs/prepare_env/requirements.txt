@@ -26,3 +26,4 @@ dearpygui
 ninja
 pyaudio # for extract esperanto
 mediapipe==0.8.11
+psutil
