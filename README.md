@@ -14,7 +14,10 @@ This repository is the official PyTorch implementation of our [ICLR-2023 paper](
 </p>
 
 Our GeneFace achieves better lip synchronization and expressiveness to out-of-domain audios. Watch [this video](https://geneface.github.io/GeneFace/example_show_improvement.mp4) for a clear lip-sync comparison against previous NeRF-based methods. You can also visit our [project page](https://geneface.github.io/) for more details.
-# 🔥GeneFace++ Released
+# 🔥MimicTalk Released
+**We have released the code of MimicTalk ([https://github.com/yerfor/MimicTalk/](https://github.com/yerfor/MimicTalk/)), which is a SOTA NeRF-based person-specific talking face method and achieves better visual quality and enables talking style control.**
+
+# GeneFace++ Released
 **We have released the code of GeneFace++ ([https://github.com/yerfor/GeneFacePlusPlus/](https://github.com/yerfor/GeneFacePlusPlus/)), which is a upgraded version of GeneFace and achieves better lip-sync, video qaulity, and system efficiency.**
 ## Update:
 - `2023.3.16` We release a big update in [this release](https://github.com/yerfor/GeneFace/releases/tag/v1.1.0), a video demo is [here](assets/zozo_radnerf_torso_smo.mp4). including: 1) RAD-NeRF-based renderer, which could infer in real-time and be trained in 10 hours. 2) pytorch-based deep3d_reconstruction module, which is easier to install and is 8x faster than the previous TF-based version. 3) pitch-aware audio2motion module which could generate more lip-sync landmark. 4) fix some bugs that cause large memory usage. 5) We will upload the paper about this update soon.
